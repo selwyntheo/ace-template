@@ -24,7 +24,13 @@ import {
   Tab,
   Grid,
   Divider,
-  Paper
+  Paper,
+  Checkbox,
+  FormControlLabel,
+  ListItemText,
+  OutlinedInput,
+  Switch,
+  Stack
 } from '@mui/material';
 import {
   PlayArrow,
@@ -36,7 +42,11 @@ import {
   Code,
   Download,
   FilterList,
-  Sort
+  Sort,
+  ViewColumn,
+  SelectAll,
+  CheckBoxOutlineBlank,
+  CheckBox
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
 import designApi from '../services/designApi';
@@ -55,6 +65,8 @@ const EnhancedTableComponent = ({
     query: '',
     results: [],
     columns: [],
+    availableColumns: [], // All available columns from data
+    selectedColumns: [], // User-selected columns to display
     loading: false,
     error: null,
     lastFetched: null,
@@ -65,13 +77,16 @@ const EnhancedTableComponent = ({
 
   const [queryDialog, setQueryDialog] = useState(false);
   const [saveDialog, setSaveDialog] = useState(false);
+  const [columnSelectionDialog, setColumnSelectionDialog] = useState(false);
   const [advancedOptions, setAdvancedOptions] = useState({
     autoRefresh: false,
     refreshInterval: 30000,
     enableFiltering: true,
     enableSorting: true,
     enablePagination: true,
-    rowSelection: 'single'
+    rowSelection: 'single',
+    columnSelection: true, // Enable column selection feature
+    showAllColumns: true // Show all columns by default
   });
 
   // Data source configurations - Updated to use generic MongoDB API
@@ -454,7 +469,42 @@ const EnhancedTableComponent = ({
         });
     }
 
+    // Store all available columns for selection
+    setDataState(prev => ({
+      ...prev,
+      availableColumns: columns,
+      selectedColumns: advancedOptions.showAllColumns ? columns.map(col => col.field) : []
+    }));
+
     return columns;
+  };
+
+  // Get filtered columns based on user selection
+  const getDisplayColumns = () => {
+    if (!advancedOptions.columnSelection || advancedOptions.showAllColumns) {
+      return dataState.columns;
+    }
+    
+    return dataState.columns.filter(col => dataState.selectedColumns.includes(col.field));
+  };
+
+  // Handle column selection changes
+  const handleColumnSelection = (columnField, checked) => {
+    setDataState(prev => ({
+      ...prev,
+      selectedColumns: checked 
+        ? [...prev.selectedColumns, columnField]
+        : prev.selectedColumns.filter(field => field !== columnField)
+    }));
+  };
+
+  // Select/deselect all columns
+  const handleSelectAllColumns = (selectAll) => {
+    setDataState(prev => ({
+      ...prev,
+      selectedColumns: selectAll ? prev.availableColumns.map(col => col.field) : []
+    }));
+  };
   };
 
   // Execute custom queries (predefined for demo)
@@ -763,11 +813,78 @@ const EnhancedTableComponent = ({
       )}
       
       {dataState.results.length > 0 ? (
-        <DataGrid
-          rows={dataState.results}
-          columns={dataState.columns}
-          pageSize={dataState.pageSize}
-          loading={dataState.loading}
+        <Box>
+          {/* Column Selection Controls */}
+          {advancedOptions.columnSelection && dataState.availableColumns.length > 0 && (
+            <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <ViewColumn fontSize="small" />
+                  Column Selection ({dataState.selectedColumns.length} of {dataState.availableColumns.length})
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    size="small"
+                    startIcon={<SelectAll />}
+                    onClick={() => handleSelectAllColumns(true)}
+                    disabled={dataState.selectedColumns.length === dataState.availableColumns.length}
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    size="small"
+                    startIcon={<CheckBoxOutlineBlank />}
+                    onClick={() => handleSelectAllColumns(false)}
+                    disabled={dataState.selectedColumns.length === 0}
+                  >
+                    Clear All
+                  </Button>
+                  <Switch
+                    checked={advancedOptions.showAllColumns}
+                    onChange={(e) => setAdvancedOptions(prev => ({ 
+                      ...prev, 
+                      showAllColumns: e.target.checked 
+                    }))}
+                    size="small"
+                  />
+                  <Typography variant="caption">Show All</Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {dataState.availableColumns.map((column) => (
+                  <FormControlLabel
+                    key={column.field}
+                    control={
+                      <Checkbox
+                        checked={dataState.selectedColumns.includes(column.field)}
+                        onChange={(e) => handleColumnSelection(column.field, e.target.checked)}
+                        size="small"
+                      />
+                    }
+                    label={column.headerName}
+                    sx={{ 
+                      bgcolor: dataState.selectedColumns.includes(column.field) ? 'primary.light' : 'white',
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: 1,
+                      border: '1px solid',
+                      borderColor: dataState.selectedColumns.includes(column.field) ? 'primary.main' : 'grey.300',
+                      m: 0,
+                      '& .MuiTypography-root': {
+                        fontSize: '0.75rem'
+                      }
+                    }}
+                  />
+                ))}
+              </Box>
+            </Box>
+          )}
+          
+          <DataGrid
+            rows={dataState.results}
+            columns={getDisplayColumns()}
+            pageSize={dataState.pageSize}
+            loading={dataState.loading}
           getRowId={(row, index) => {
             // First priority: standard id field
             if (row.id) return row.id;
@@ -812,6 +929,7 @@ const EnhancedTableComponent = ({
           onCellEditCommit={handleCellEditCommit}
           experimentalFeatures={{ newEditingApi: true }}
         />
+      </Box>
       ) : (
         <Box sx={{ 
           display: 'flex', 

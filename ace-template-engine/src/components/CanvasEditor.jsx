@@ -45,6 +45,7 @@ import {
   CircularProgress,
   AppBar
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Rnd } from 'react-rnd';
@@ -661,6 +662,33 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) =>
             maxRows={properties.maxRows || 8}
             sx={commonStyles}
             onChange={(e) => onUpdate({ properties: { ...properties, value: e.target.value } })}
+          />
+        );
+
+      case 'datepicker':
+        return (
+          <DatePicker
+            label={properties.label || 'Select Date'}
+            value={properties.value ? new Date(properties.value) : null}
+            onChange={(newValue) => onUpdate({ 
+              properties: { 
+                ...properties, 
+                value: newValue ? newValue.toISOString() : null 
+              } 
+            })}
+            disabled={locked}
+            format={properties.format || 'MM/dd/yyyy'}
+            slotProps={{
+              textField: {
+                fullWidth: true,
+                variant: properties.variant || 'outlined',
+                size: properties.size || 'medium',
+                helperText: properties.helperText || '',
+                required: properties.required || false,
+                sx: commonStyles,
+                error: properties.error || false
+              }
+            }}
           />
         );
 

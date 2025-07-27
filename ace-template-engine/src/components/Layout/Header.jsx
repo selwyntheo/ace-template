@@ -142,22 +142,6 @@ const Header = () => {
           >
             Test Suite
           </Button>
-          <Button
-            color={isActive('/table-test') ? 'primary' : 'inherit'}
-            startIcon={<TableChart />}
-            onClick={() => navigate('/table-test')}
-            sx={{ 
-              textTransform: 'none',
-              color: isActive('/table-test') ? '#6B73FF' : '#718096',
-              backgroundColor: isActive('/table-test') ? 'rgba(107, 115, 255, 0.08)' : 'transparent',
-              '&:hover': {
-                backgroundColor: 'rgba(107, 115, 255, 0.08)',
-                color: '#6B73FF',
-              },
-            }}
-          >
-            Table Test
-          </Button>
         </Box>
 
         <Box>
