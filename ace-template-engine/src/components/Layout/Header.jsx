@@ -36,7 +36,15 @@ const Header = () => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <AppBar position="static" elevation={1}>
+    <AppBar 
+      position="static" 
+      elevation={0}
+      sx={{
+        backgroundColor: '#FFFFFF',
+        borderBottom: '1px solid #E2E8F0',
+        color: '#2D3748',
+      }}
+    >
       <Toolbar>
         <Typography
           variant="h6"
@@ -45,7 +53,8 @@ const Header = () => {
             flexGrow: 0, 
             mr: 4,
             fontWeight: 600,
-            cursor: 'pointer'
+            cursor: 'pointer',
+            color: '#6B73FF',
           }}
           onClick={() => navigate('/')}
         >
@@ -54,50 +63,98 @@ const Header = () => {
 
         <Box sx={{ flexGrow: 1, display: 'flex', gap: 1 }}>
           <Button
-            color={isActive('/') ? 'secondary' : 'inherit'}
+            color={isActive('/') ? 'primary' : 'inherit'}
             startIcon={<Dashboard />}
             onClick={() => navigate('/')}
-            sx={{ textTransform: 'none' }}
+            sx={{ 
+              textTransform: 'none',
+              color: isActive('/') ? '#6B73FF' : '#718096',
+              backgroundColor: isActive('/') ? 'rgba(107, 115, 255, 0.08)' : 'transparent',
+              '&:hover': {
+                backgroundColor: 'rgba(107, 115, 255, 0.08)',
+                color: '#6B73FF',
+              },
+            }}
           >
             Dashboard
           </Button>
           <Button
-            color={isActive('/editor') ? 'secondary' : 'inherit'}
+            color={isActive('/editor') ? 'primary' : 'inherit'}
             startIcon={<Edit />}
             onClick={() => navigate('/editor')}
-            sx={{ textTransform: 'none' }}
+            sx={{ 
+              textTransform: 'none',
+              color: isActive('/editor') ? '#6B73FF' : '#718096',
+              backgroundColor: isActive('/editor') ? 'rgba(107, 115, 255, 0.08)' : 'transparent',
+              '&:hover': {
+                backgroundColor: 'rgba(107, 115, 255, 0.08)',
+                color: '#6B73FF',
+              },
+            }}
           >
             Editor
           </Button>
           <Button
-            color={isActive('/templates') ? 'secondary' : 'inherit'}
+            color={isActive('/templates') ? 'primary' : 'inherit'}
             startIcon={<CollectionsBookmark />}
             onClick={() => navigate('/templates')}
-            sx={{ textTransform: 'none' }}
+            sx={{ 
+              textTransform: 'none',
+              color: isActive('/templates') ? '#6B73FF' : '#718096',
+              backgroundColor: isActive('/templates') ? 'rgba(107, 115, 255, 0.08)' : 'transparent',
+              '&:hover': {
+                backgroundColor: 'rgba(107, 115, 255, 0.08)',
+                color: '#6B73FF',
+              },
+            }}
           >
             Templates
           </Button>
           <Button
-            color={isActive('/projects') ? 'secondary' : 'inherit'}
+            color={isActive('/projects') ? 'primary' : 'inherit'}
             startIcon={<FolderOpen />}
             onClick={() => navigate('/projects')}
-            sx={{ textTransform: 'none' }}
+            sx={{ 
+              textTransform: 'none',
+              color: isActive('/projects') ? '#6B73FF' : '#718096',
+              backgroundColor: isActive('/projects') ? 'rgba(107, 115, 255, 0.08)' : 'transparent',
+              '&:hover': {
+                backgroundColor: 'rgba(107, 115, 255, 0.08)',
+                color: '#6B73FF',
+              },
+            }}
           >
             Projects
           </Button>
           <Button
-            color={isActive('/test-suite') ? 'secondary' : 'inherit'}
+            color={isActive('/test-suite') ? 'primary' : 'inherit'}
             startIcon={<BugReport />}
             onClick={() => navigate('/test-suite')}
-            sx={{ textTransform: 'none' }}
+            sx={{ 
+              textTransform: 'none',
+              color: isActive('/test-suite') ? '#6B73FF' : '#718096',
+              backgroundColor: isActive('/test-suite') ? 'rgba(107, 115, 255, 0.08)' : 'transparent',
+              '&:hover': {
+                backgroundColor: 'rgba(107, 115, 255, 0.08)',
+                color: '#6B73FF',
+              },
+            }}
           >
             Test Suite
           </Button>
           <Button
-            color={isActive('/table-test') ? 'secondary' : 'inherit'}
+            color={isActive('/table-test') ? 'primary' : 'inherit'}
             startIcon={<TableChart />}
             onClick={() => navigate('/table-test')}
-            sx={{ textTransform: 'none' }}
+            sx={{ 
+              textTransform: 'none',
+              color: isActive('/table-test') ? '#6B73FF' : '#718096',
+              backgroundColor: isActive('/table-test') ? 'rgba(107, 115, 255, 0.08)' : 'transparent',
+              '&:hover': {
+                backgroundColor: 'rgba(107, 115, 255, 0.08)',
+                color: '#6B73FF',
+              },
+            }}
           >
             Table Test
           </Button>
@@ -110,7 +167,13 @@ const Header = () => {
             aria-controls="menu-appbar"
             aria-haspopup="true"
             onClick={handleMenu}
-            color="inherit"
+            sx={{
+              color: '#718096',
+              '&:hover': {
+                backgroundColor: 'rgba(107, 115, 255, 0.08)',
+                color: '#6B73FF',
+              },
+            }}
           >
             <AccountCircle />
           </IconButton>

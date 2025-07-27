@@ -824,7 +824,7 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) =>
       dragHandleClassName="drag-handle"
       bounds="parent"
       style={{
-        border: isSelected ? '2px solid #1976d2' : '1px solid transparent',
+        border: isSelected ? '2px solid #6B73FF' : '1px solid transparent',
         borderRadius: '4px',
         backgroundColor: 'white',
         cursor: locked ? 'not-allowed' : isDragging ? 'grabbing' : 'grab',
@@ -837,7 +837,7 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) =>
           right: '-5px',
           width: '10px',
           height: '10px',
-          background: '#1976d2',
+          background: '#6B73FF',
           border: '1px solid white',
           borderRadius: '50%',
           display: isSelected ? 'block' : 'none',
@@ -856,8 +856,8 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) =>
               right: 0,
               height: '20px',
               cursor: isDragging ? 'grabbing' : 'grab',
-              backgroundColor: isSelected || isHovered ? 'rgba(25, 118, 210, 0.1)' : 'transparent',
-              borderBottom: isSelected || isHovered ? '1px dashed rgba(25, 118, 210, 0.3)' : 'none',
+              backgroundColor: isSelected || isHovered ? 'rgba(107, 115, 255, 0.08)' : 'transparent',
+              borderBottom: isSelected || isHovered ? '1px dashed rgba(107, 115, 255, 0.3)' : 'none',
               zIndex: 10,
               display: 'flex',
               alignItems: 'center',
@@ -869,7 +869,7 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) =>
                 variant="caption"
                 sx={{
                   fontSize: '10px',
-                  color: '#1976d2',
+                  color: '#6B73FF',
                   fontWeight: 'bold',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
@@ -954,12 +954,13 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) =>
               bottom: -20,
               left: 0,
               fontSize: '10px',
-              color: '#1976d2',
-              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-              padding: '2px 4px',
-              borderRadius: '2px',
+              color: '#6B73FF',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              padding: '2px 6px',
+              borderRadius: '3px',
               whiteSpace: 'nowrap',
               zIndex: 1001,
+              border: '1px solid rgba(107, 115, 255, 0.2)',
             }}
           >
             {type} ({Math.round(width)}×{Math.round(height)})
@@ -1272,13 +1273,14 @@ const CanvasEditor = () => {
   return (
     <DndProvider backend={HTML5Backend}>
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        {/* Enhanced Editor Toolbar with contrasting colors */}
+        {/* Enhanced Editor Toolbar with softer colors */}
         <AppBar 
           position="static" 
-          elevation={2}
+          elevation={0}
           sx={{ 
-            backgroundColor: '#2E7D32', // Dark green contrasting with main app's blue
-            color: 'white',
+            backgroundColor: '#F8FAFC', // Very light grey-blue
+            color: '#2D3748', // Dark grey
+            borderBottom: '1px solid #E2E8F0',
             borderRadius: 0,
             '& .MuiToolbar-root': {
               minHeight: '56px',
@@ -1287,7 +1289,7 @@ const CanvasEditor = () => {
         >
           <Toolbar variant="dense">
             <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-              <Typography variant="h6" sx={{ mr: 3, fontWeight: 600 }}>
+              <Typography variant="h6" sx={{ mr: 3, fontWeight: 600, color: '#4A5568' }}>
                 {projectName}
               </Typography>
               
@@ -1295,13 +1297,14 @@ const CanvasEditor = () => {
                 label={`v${version}`} 
                 size="small" 
                 sx={{ 
-                  backgroundColor: 'rgba(255,255,255,0.2)', 
-                  color: 'white',
-                  mr: 2
+                  backgroundColor: 'rgba(107, 115, 255, 0.1)', 
+                  color: '#6B73FF',
+                  mr: 2,
+                  fontWeight: 500,
                 }} 
               />
               
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+              <Typography variant="caption" sx={{ color: '#718096' }}>
                 {elements.length} element{elements.length !== 1 ? 's' : ''}
               </Typography>
             </Box>
@@ -1310,7 +1313,18 @@ const CanvasEditor = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Tooltip title="Undo (Ctrl+Z)">
                 <span>
-                  <IconButton color="inherit" onClick={undo} disabled={!canUndo} size="small">
+                  <IconButton 
+                    onClick={undo} 
+                    disabled={!canUndo} 
+                    size="small"
+                    sx={{
+                      color: !canUndo ? '#CBD5E0' : '#718096',
+                      '&:hover': {
+                        backgroundColor: 'rgba(107, 115, 255, 0.08)',
+                        color: '#6B73FF',
+                      },
+                    }}
+                  >
                     <UndoIcon />
                   </IconButton>
                 </span>
@@ -1318,41 +1332,64 @@ const CanvasEditor = () => {
               
               <Tooltip title="Redo (Ctrl+Y)">
                 <span>
-                  <IconButton color="inherit" onClick={redo} disabled={!canRedo} size="small">
+                  <IconButton 
+                    onClick={redo} 
+                    disabled={!canRedo} 
+                    size="small"
+                    sx={{
+                      color: !canRedo ? '#CBD5E0' : '#718096',
+                      '&:hover': {
+                        backgroundColor: 'rgba(107, 115, 255, 0.08)',
+                        color: '#6B73FF',
+                      },
+                    }}
+                  >
                     <RedoIcon />
                   </IconButton>
                 </span>
               </Tooltip>
               
-              <Divider orientation="vertical" flexItem sx={{ mx: 1, bgcolor: 'rgba(255,255,255,0.3)' }} />
+              <Divider orientation="vertical" flexItem sx={{ mx: 1, bgcolor: '#E2E8F0' }} />
               
               <Tooltip title="Zoom Out">
                 <IconButton 
-                  color="inherit" 
                   onClick={() => setZoom(Math.max(25, zoom - 25))}
                   disabled={zoom <= 25}
                   size="small"
+                  sx={{
+                    color: zoom <= 25 ? '#CBD5E0' : '#718096',
+                    '&:hover': {
+                      backgroundColor: 'rgba(107, 115, 255, 0.08)',
+                      color: '#6B73FF',
+                    },
+                  }}
                 >
                   <ZoomOutIcon />
                 </IconButton>
               </Tooltip>
               
-              <Typography variant="body2" sx={{ mx: 1, minWidth: '45px', textAlign: 'center' }}>
+              <Typography variant="body2" sx={{ mx: 1, minWidth: '45px', textAlign: 'center', color: '#4A5568' }}>
                 {zoom}%
               </Typography>
               
               <Tooltip title="Zoom In">
                 <IconButton 
-                  color="inherit" 
                   onClick={() => setZoom(Math.min(200, zoom + 25))}
                   disabled={zoom >= 200}
                   size="small"
+                  sx={{
+                    color: zoom >= 200 ? '#CBD5E0' : '#718096',
+                    '&:hover': {
+                      backgroundColor: 'rgba(107, 115, 255, 0.08)',
+                      color: '#6B73FF',
+                    },
+                  }}
                 >
                   <ZoomInIcon />
                 </IconButton>
               </Tooltip>
               
-              <Divider orientation="vertical" flexItem sx={{ mx: 1, bgcolor: 'rgba(255,255,255,0.3)' }} />
+              <Divider orientation="vertical" flexItem sx={{ mx: 1, bgcolor: '#E2E8F0' }} />
               
               <FormControlLabel
                 control={
@@ -1362,36 +1399,51 @@ const CanvasEditor = () => {
                     size="small"
                     sx={{
                       '& .MuiSwitch-switchBase.Mui-checked': {
-                        color: 'white',
+                        color: '#6B73FF',
                       },
                       '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                        backgroundColor: 'rgba(255,255,255,0.5)',
+                        backgroundColor: 'rgba(107, 115, 255, 0.5)',
+                      },
+                      '& .MuiSwitch-track': {
+                        backgroundColor: '#E2E8F0',
                       },
                     }}
                   />
                 }
                 label="Grid"
-                sx={{ color: 'white', mr: 2, ml: 1 }}
+                sx={{ color: '#4A5568', mr: 2, ml: 1 }}
               />
               
-              <Divider orientation="vertical" flexItem sx={{ mx: 1, bgcolor: 'rgba(255,255,255,0.3)' }} />
+              <Divider orientation="vertical" flexItem sx={{ mx: 1, bgcolor: '#E2E8F0' }} />
               
               <Button 
-                color="inherit" 
                 startIcon={<PreviewIcon />} 
                 onClick={handlePreview}
                 size="small"
-                sx={{ mr: 1 }}
+                sx={{ 
+                  mr: 1,
+                  color: '#718096',
+                  '&:hover': {
+                    backgroundColor: 'rgba(107, 115, 255, 0.08)',
+                    color: '#6B73FF',
+                  },
+                }}
               >
                 Preview
               </Button>
               
               <Button 
-                color="inherit" 
                 startIcon={<History />} 
                 onClick={() => setVersionDialogOpen(true)}
                 size="small"
-                sx={{ mr: 1 }}
+                sx={{ 
+                  mr: 1,
+                  color: '#718096',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 154, 162, 0.08)',
+                    color: '#FF9AA2',
+                  },
+                }}
               >
                 Version
               </Button>
@@ -1402,10 +1454,14 @@ const CanvasEditor = () => {
                 onClick={() => setSaveDialogOpen(true)}
                 size="small"
                 sx={{ 
-                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  backgroundColor: '#6B73FF',
+                  color: 'white',
                   '&:hover': {
-                    backgroundColor: 'rgba(255,255,255,0.3)',
-                  }
+                    backgroundColor: '#4F56C9',
+                  },
+                  '&:disabled': {
+                    backgroundColor: '#CBD5E0',
+                  },
                 }}
               >
                 Save
@@ -1429,11 +1485,13 @@ const CanvasEditor = () => {
                 boxSizing: 'border-box',
                 position: 'relative',
                 height: '100%',
+                backgroundColor: '#FAFBFC',
+                borderRight: '1px solid #E2E8F0',
               },
             }}
           >
             <Box sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ color: '#2D3748', fontWeight: 600 }}>
                 Components
               </Typography>
               
@@ -1447,11 +1505,12 @@ const CanvasEditor = () => {
                     <Typography 
                       variant="subtitle2" 
                       sx={{ 
-                        color: 'text.secondary', 
-                        fontWeight: 'bold',
+                        color: '#4A5568', 
+                        fontWeight: 600,
                         textTransform: 'uppercase',
                         letterSpacing: 1,
-                        mb: 1 
+                        mb: 1,
+                        fontSize: '0.75rem',
                       }}
                     >
                       {category}
@@ -1468,10 +1527,20 @@ const CanvasEditor = () => {
                               flexDirection: 'column',
                               gap: 0.5,
                               fontSize: '11px',
-                              border: '1px solid #e0e0e0',
+                              border: '1px solid #E2E8F0',
+                              color: '#4A5568',
+                              backgroundColor: 'white',
                               '&:hover': {
-                                backgroundColor: 'action.hover',
-                                borderColor: 'primary.main',
+                                backgroundColor: 'rgba(107, 115, 255, 0.04)',
+                                borderColor: '#6B73FF',
+                                color: '#6B73FF',
+                                '& .MuiSvgIcon-root': {
+                                  color: '#6B73FF',
+                                },
+                              },
+                              '& .MuiSvgIcon-root': {
+                                color: '#718096',
+                                fontSize: '1.2rem',
                               },
                             }}
                           >
@@ -1485,9 +1554,9 @@ const CanvasEditor = () => {
                 );
               })}
 
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 2, borderColor: '#E2E8F0' }} />
 
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ color: '#2D3748', fontWeight: 600 }}>
                 Canvas Settings
               </Typography>
               
@@ -1523,6 +1592,14 @@ const CanvasEditor = () => {
                     });
                   }
                 }}
+                sx={{
+                  borderColor: '#FEB2B2',
+                  color: '#E53E3E',
+                  '&:hover': {
+                    backgroundColor: 'rgba(229, 62, 62, 0.04)',
+                    borderColor: '#E53E3E',
+                  },
+                }}
               >
                 Clear Canvas
               </Button>
@@ -1534,7 +1611,7 @@ const CanvasEditor = () => {
             sx={{
               flexGrow: 1,
               overflow: 'auto',
-              backgroundColor: '#f5f5f5',
+              backgroundColor: '#F7FAFC',
               height: '100%',
             }}
           >
@@ -1556,7 +1633,7 @@ const CanvasEditor = () => {
                   width: canvasSettings.width,
                   height: canvasSettings.height,
                   backgroundColor: 'white',
-                  border: '2px solid #e0e0e0',
+                  border: '2px solid #E2E8F0',
                   borderRadius: 2,
                   transform: `scale(${zoom / 100})`,
                   transformOrigin: 'top center',
@@ -1564,8 +1641,8 @@ const CanvasEditor = () => {
                   overflow: 'hidden',
                   ...(showGrid && {
                     backgroundImage: `
-                      linear-gradient(to right, #f0f0f0 1px, transparent 1px),
-                      linear-gradient(to bottom, #f0f0f0 1px, transparent 1px)
+                      linear-gradient(to right, #EDF2F7 1px, transparent 1px),
+                      linear-gradient(to bottom, #EDF2F7 1px, transparent 1px)
                     `,
                     backgroundSize: '20px 20px',
                   }),
@@ -1612,8 +1689,8 @@ const CanvasEditor = () => {
             sx={{
               width: 320,
               flexShrink: 0,
-              backgroundColor: 'white',
-              borderLeft: '1px solid #e0e0e0',
+              backgroundColor: '#FAFBFC',
+              borderLeft: '1px solid #E2E8F0',
               height: '100%',
               overflow: 'auto',
             }}
@@ -1644,7 +1721,7 @@ const CanvasEditor = () => {
 
         {/* Enhanced Save Dialog */}
         <Dialog open={saveDialogOpen} onClose={() => setSaveDialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle sx={{ bgcolor: '#2E7D32', color: 'white' }}>
+          <DialogTitle sx={{ bgcolor: '#6B73FF', color: 'white' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="h6">Save Design</Typography>
               <IconButton onClick={() => setSaveDialogOpen(false)} sx={{ color: 'white' }}>
@@ -1724,7 +1801,7 @@ const CanvasEditor = () => {
               onClick={handleSave}
               disabled={saving || !projectName.trim()}
               startIcon={saving ? <CircularProgress size={16} /> : <SaveIcon />}
-              sx={{ bgcolor: '#2E7D32' }}
+              sx={{ bgcolor: '#6B73FF', '&:hover': { bgcolor: '#4F56C9' } }}
             >
               {saving ? 'Saving...' : 'Save Design'}
             </Button>
@@ -1733,7 +1810,7 @@ const CanvasEditor = () => {
 
         {/* Version Dialog */}
         <Dialog open={versionDialogOpen} onClose={() => setVersionDialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle sx={{ bgcolor: '#2E7D32', color: 'white' }}>
+          <DialogTitle sx={{ bgcolor: '#FF9AA2', color: 'white' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="h6">Create New Version</Typography>
               <IconButton onClick={() => setVersionDialogOpen(false)} sx={{ color: 'white' }}>
@@ -1781,7 +1858,7 @@ const CanvasEditor = () => {
               onClick={handleCreateVersion}
               disabled={saving || !version.trim()}
               startIcon={saving ? <CircularProgress size={16} /> : <History />}
-              sx={{ bgcolor: '#2E7D32' }}
+              sx={{ bgcolor: '#FF9AA2', '&:hover': { bgcolor: '#E8858C' } }}
             >
               {saving ? 'Creating...' : 'Create Version'}
             </Button>
@@ -1796,7 +1873,7 @@ const CanvasEditor = () => {
           fullWidth
           PaperProps={{ sx: { height: '90vh' } }}
         >
-          <DialogTitle sx={{ bgcolor: '#2E7D32', color: 'white' }}>
+          <DialogTitle sx={{ bgcolor: '#A78BFA', color: 'white' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="h6">Preview: {projectName}</Typography>
               <Box>
@@ -1891,7 +1968,7 @@ const CanvasEditor = () => {
 
         {/* Publish Dialog */}
         <Dialog open={publishDialogOpen} onClose={() => setPublishDialogOpen(false)} maxWidth="md" fullWidth>
-          <DialogTitle sx={{ bgcolor: '#2E7D32', color: 'white' }}>
+          <DialogTitle sx={{ bgcolor: '#FFA726', color: 'white' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="h6">Publish Design</Typography>
               <IconButton onClick={() => setPublishDialogOpen(false)} sx={{ color: 'white' }}>
@@ -1976,7 +2053,7 @@ const CanvasEditor = () => {
               onClick={handlePublish}
               disabled={saving}
               startIcon={saving ? <CircularProgress size={16} /> : <Publish />}
-              sx={{ bgcolor: '#2E7D32' }}
+              sx={{ bgcolor: '#FFA726', '&:hover': { bgcolor: '#FB8C00' } }}
             >
               {saving ? 'Publishing...' : 'Publish Design'}
             </Button>
@@ -1985,7 +2062,7 @@ const CanvasEditor = () => {
 
         {/* Loading Backdrop */}
         <Backdrop open={saving} sx={{ zIndex: 9999 }}>
-          <CircularProgress color="inherit" />
+          <CircularProgress sx={{ color: '#6B73FF' }} />
         </Backdrop>
 
         {/* Floating Action Buttons for Quick Actions */}
@@ -2003,9 +2080,12 @@ const CanvasEditor = () => {
           <Tooltip title="Quick Save" placement="left">
             <Fab
               size="small"
-              color="primary"
               onClick={handleSave}
-              sx={{ bgcolor: '#2E7D32' }}
+              sx={{ 
+                bgcolor: '#6B73FF', 
+                color: 'white',
+                '&:hover': { bgcolor: '#4F56C9' },
+              }}
             >
               <SaveIcon />
             </Fab>
@@ -2014,7 +2094,11 @@ const CanvasEditor = () => {
             <Fab
               size="small"
               onClick={() => setPublishDialogOpen(true)}
-              sx={{ bgcolor: '#FF9800', color: 'white' }}
+              sx={{ 
+                bgcolor: '#FFA726', 
+                color: 'white',
+                '&:hover': { bgcolor: '#FB8C00' },
+              }}
             >
               <CloudUpload />
             </Fab>
