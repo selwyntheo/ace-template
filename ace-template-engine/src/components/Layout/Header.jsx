@@ -54,7 +54,7 @@ const Header = () => {
             mr: 4,
             fontWeight: 600,
             cursor: 'pointer',
-            color: '#6B73FF',
+            color: '#2B9CAE',
           }}
           onClick={() => navigate('/')}
         >
@@ -68,11 +68,11 @@ const Header = () => {
             onClick={() => navigate('/')}
             sx={{ 
               textTransform: 'none',
-              color: isActive('/') ? '#6B73FF' : '#718096',
-              backgroundColor: isActive('/') ? 'rgba(107, 115, 255, 0.08)' : 'transparent',
+              color: isActive('/') ? '#2B9CAE' : '#718096',
+              backgroundColor: isActive('/') ? 'rgba(43, 156, 174, 0.08)' : 'transparent',
               '&:hover': {
-                backgroundColor: 'rgba(107, 115, 255, 0.08)',
-                color: '#6B73FF',
+                backgroundColor: 'rgba(43, 156, 174, 0.08)',
+                color: '#2B9CAE',
               },
             }}
           >
@@ -84,11 +84,11 @@ const Header = () => {
             onClick={() => navigate('/editor')}
             sx={{ 
               textTransform: 'none',
-              color: isActive('/editor') ? '#6B73FF' : '#718096',
-              backgroundColor: isActive('/editor') ? 'rgba(107, 115, 255, 0.08)' : 'transparent',
+              color: isActive('/editor') ? '#2B9CAE' : '#718096',
+              backgroundColor: isActive('/editor') ? 'rgba(43, 156, 174, 0.08)' : 'transparent',
               '&:hover': {
-                backgroundColor: 'rgba(107, 115, 255, 0.08)',
-                color: '#6B73FF',
+                backgroundColor: 'rgba(43, 156, 174, 0.08)',
+                color: '#2B9CAE',
               },
             }}
           >
@@ -100,11 +100,11 @@ const Header = () => {
             onClick={() => navigate('/templates')}
             sx={{ 
               textTransform: 'none',
-              color: isActive('/templates') ? '#6B73FF' : '#718096',
-              backgroundColor: isActive('/templates') ? 'rgba(107, 115, 255, 0.08)' : 'transparent',
+              color: isActive('/templates') ? '#2B9CAE' : '#718096',
+              backgroundColor: isActive('/templates') ? 'rgba(43, 156, 174, 0.08)' : 'transparent',
               '&:hover': {
-                backgroundColor: 'rgba(107, 115, 255, 0.08)',
-                color: '#6B73FF',
+                backgroundColor: 'rgba(43, 156, 174, 0.08)',
+                color: '#2B9CAE',
               },
             }}
           >
@@ -116,11 +116,11 @@ const Header = () => {
             onClick={() => navigate('/projects')}
             sx={{ 
               textTransform: 'none',
-              color: isActive('/projects') ? '#6B73FF' : '#718096',
-              backgroundColor: isActive('/projects') ? 'rgba(107, 115, 255, 0.08)' : 'transparent',
+              color: isActive('/projects') ? '#2B9CAE' : '#718096',
+              backgroundColor: isActive('/projects') ? 'rgba(43, 156, 174, 0.08)' : 'transparent',
               '&:hover': {
-                backgroundColor: 'rgba(107, 115, 255, 0.08)',
-                color: '#6B73FF',
+                backgroundColor: 'rgba(43, 156, 174, 0.08)',
+                color: '#2B9CAE',
               },
             }}
           >
@@ -132,11 +132,11 @@ const Header = () => {
             onClick={() => navigate('/test-suite')}
             sx={{ 
               textTransform: 'none',
-              color: isActive('/test-suite') ? '#6B73FF' : '#718096',
-              backgroundColor: isActive('/test-suite') ? 'rgba(107, 115, 255, 0.08)' : 'transparent',
+              color: isActive('/test-suite') ? '#2B9CAE' : '#718096',
+              backgroundColor: isActive('/test-suite') ? 'rgba(43, 156, 174, 0.08)' : 'transparent',
               '&:hover': {
-                backgroundColor: 'rgba(107, 115, 255, 0.08)',
-                color: '#6B73FF',
+                backgroundColor: 'rgba(43, 156, 174, 0.08)',
+                color: '#2B9CAE',
               },
             }}
           >
@@ -154,8 +154,8 @@ const Header = () => {
             sx={{
               color: '#718096',
               '&:hover': {
-                backgroundColor: 'rgba(107, 115, 255, 0.08)',
-                color: '#6B73FF',
+                backgroundColor: 'rgba(43, 156, 174, 0.08)',
+                color: '#2B9CAE',
               },
             }}
           >

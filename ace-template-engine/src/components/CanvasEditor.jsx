@@ -852,7 +852,7 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) =>
       dragHandleClassName="drag-handle"
       bounds="parent"
       style={{
-        border: isSelected ? '2px solid #6B73FF' : '1px solid transparent',
+        border: isSelected ? '2px solid #2B9CAE' : '1px solid transparent',
         borderRadius: '4px',
         backgroundColor: 'white',
         cursor: locked ? 'not-allowed' : isDragging ? 'grabbing' : 'grab',
@@ -865,7 +865,7 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) =>
           right: '-5px',
           width: '10px',
           height: '10px',
-          background: '#6B73FF',
+          background: '#2B9CAE',
           border: '1px solid white',
           borderRadius: '50%',
           display: isSelected ? 'block' : 'none',
@@ -897,7 +897,7 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) =>
                 variant="caption"
                 sx={{
                   fontSize: '10px',
-                  color: '#6B73FF',
+                  color: '#2B9CAE',
                   fontWeight: 'bold',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
@@ -982,7 +982,7 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) =>
               bottom: -20,
               left: 0,
               fontSize: '10px',
-              color: '#6B73FF',
+              color: '#2B9CAE',
               backgroundColor: 'rgba(255, 255, 255, 0.95)',
               padding: '2px 6px',
               borderRadius: '3px',
@@ -1326,7 +1326,7 @@ const CanvasEditor = () => {
                 size="small" 
                 sx={{ 
                   backgroundColor: 'rgba(107, 115, 255, 0.1)', 
-                  color: '#6B73FF',
+                  color: '#2B9CAE',
                   mr: 2,
                   fontWeight: 500,
                 }} 
@@ -1349,7 +1349,7 @@ const CanvasEditor = () => {
                       color: !canUndo ? '#CBD5E0' : '#718096',
                       '&:hover': {
                         backgroundColor: 'rgba(107, 115, 255, 0.08)',
-                        color: '#6B73FF',
+                        color: '#2B9CAE',
                       },
                     }}
                   >
@@ -1368,7 +1368,7 @@ const CanvasEditor = () => {
                       color: !canRedo ? '#CBD5E0' : '#718096',
                       '&:hover': {
                         backgroundColor: 'rgba(107, 115, 255, 0.08)',
-                        color: '#6B73FF',
+                        color: '#2B9CAE',
                       },
                     }}
                   >
@@ -1388,7 +1388,7 @@ const CanvasEditor = () => {
                     color: zoom <= 25 ? '#CBD5E0' : '#718096',
                     '&:hover': {
                       backgroundColor: 'rgba(107, 115, 255, 0.08)',
-                      color: '#6B73FF',
+                      color: '#2B9CAE',
                     },
                   }}
                 >
@@ -1409,7 +1409,7 @@ const CanvasEditor = () => {
                     color: zoom >= 200 ? '#CBD5E0' : '#718096',
                     '&:hover': {
                       backgroundColor: 'rgba(107, 115, 255, 0.08)',
-                      color: '#6B73FF',
+                      color: '#2B9CAE',
                     },
                   }}
                 >
@@ -1427,7 +1427,7 @@ const CanvasEditor = () => {
                     size="small"
                     sx={{
                       '& .MuiSwitch-switchBase.Mui-checked': {
-                        color: '#6B73FF',
+                        color: '#2B9CAE',
                       },
                       '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
                         backgroundColor: 'rgba(107, 115, 255, 0.5)',
@@ -1453,7 +1453,7 @@ const CanvasEditor = () => {
                   color: '#718096',
                   '&:hover': {
                     backgroundColor: 'rgba(107, 115, 255, 0.08)',
-                    color: '#6B73FF',
+                    color: '#2B9CAE',
                   },
                 }}
               >
@@ -1469,7 +1469,7 @@ const CanvasEditor = () => {
                   color: '#718096',
                   '&:hover': {
                     backgroundColor: 'rgba(255, 154, 162, 0.08)',
-                    color: '#FF9AA2',
+                    color: '#5A7A8F',
                   },
                 }}
               >
@@ -1482,10 +1482,10 @@ const CanvasEditor = () => {
                 onClick={() => setSaveDialogOpen(true)}
                 size="small"
                 sx={{ 
-                  backgroundColor: '#6B73FF',
+                  backgroundColor: '#2B9CAE',
                   color: 'white',
                   '&:hover': {
-                    backgroundColor: '#4F56C9',
+                    backgroundColor: '#1F6B7A',
                   },
                   '&:disabled': {
                     backgroundColor: '#CBD5E0',
@@ -1560,10 +1560,10 @@ const CanvasEditor = () => {
                               backgroundColor: 'white',
                               '&:hover': {
                                 backgroundColor: 'rgba(107, 115, 255, 0.04)',
-                                borderColor: '#6B73FF',
-                                color: '#6B73FF',
+                                borderColor: '#2B9CAE',
+                                color: '#2B9CAE',
                                 '& .MuiSvgIcon-root': {
-                                  color: '#6B73FF',
+                                  color: '#2B9CAE',
                                 },
                               },
                               '& .MuiSvgIcon-root': {
@@ -1749,7 +1749,7 @@ const CanvasEditor = () => {
 
         {/* Enhanced Save Dialog */}
         <Dialog open={saveDialogOpen} onClose={() => setSaveDialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle sx={{ bgcolor: '#6B73FF', color: 'white' }}>
+          <DialogTitle sx={{ bgcolor: '#2B9CAE', color: 'white' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="h6">Save Design</Typography>
               <IconButton onClick={() => setSaveDialogOpen(false)} sx={{ color: 'white' }}>
@@ -1829,7 +1829,7 @@ const CanvasEditor = () => {
               onClick={handleSave}
               disabled={saving || !projectName.trim()}
               startIcon={saving ? <CircularProgress size={16} /> : <SaveIcon />}
-              sx={{ bgcolor: '#6B73FF', '&:hover': { bgcolor: '#4F56C9' } }}
+              sx={{ bgcolor: '#2B9CAE', '&:hover': { bgcolor: '#1F6B7A' } }}
             >
               {saving ? 'Saving...' : 'Save Design'}
             </Button>
@@ -1838,7 +1838,7 @@ const CanvasEditor = () => {
 
         {/* Version Dialog */}
         <Dialog open={versionDialogOpen} onClose={() => setVersionDialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle sx={{ bgcolor: '#FF9AA2', color: 'white' }}>
+          <DialogTitle sx={{ bgcolor: '#5A7A8F', color: 'white' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="h6">Create New Version</Typography>
               <IconButton onClick={() => setVersionDialogOpen(false)} sx={{ color: 'white' }}>
@@ -1886,7 +1886,7 @@ const CanvasEditor = () => {
               onClick={handleCreateVersion}
               disabled={saving || !version.trim()}
               startIcon={saving ? <CircularProgress size={16} /> : <History />}
-              sx={{ bgcolor: '#FF9AA2', '&:hover': { bgcolor: '#E8858C' } }}
+              sx={{ bgcolor: '#5A7A8F', '&:hover': { bgcolor: '#4A6B7E' } }}
             >
               {saving ? 'Creating...' : 'Create Version'}
             </Button>
@@ -2090,7 +2090,7 @@ const CanvasEditor = () => {
 
         {/* Loading Backdrop */}
         <Backdrop open={saving} sx={{ zIndex: 9999 }}>
-          <CircularProgress sx={{ color: '#6B73FF' }} />
+          <CircularProgress sx={{ color: '#2B9CAE' }} />
         </Backdrop>
 
         {/* Floating Action Buttons for Quick Actions */}
@@ -2110,9 +2110,9 @@ const CanvasEditor = () => {
               size="small"
               onClick={handleSave}
               sx={{ 
-                bgcolor: '#6B73FF', 
+                bgcolor: '#2B9CAE', 
                 color: 'white',
-                '&:hover': { bgcolor: '#4F56C9' },
+                '&:hover': { bgcolor: '#1F6B7A' },
               }}
             >
               <SaveIcon />

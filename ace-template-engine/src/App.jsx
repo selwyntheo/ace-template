@@ -15,15 +15,15 @@ import TestSuiteRunnerEnhanced from './components/TestSuiteRunnerEnhanced';
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#6B73FF', // Soft periwinkle blue
-      light: '#9C9EFF',
-      dark: '#4F56C9',
+      main: '#2B9CAE', // Soft teal blue-green
+      light: '#7BC4D1', // Lighter teal
+      dark: '#1F6B7A', // Darker teal
       contrastText: '#FFFFFF',
     },
     secondary: {
-      main: '#FF9AA2', // Soft coral pink
-      light: '#FFB3B8',
-      dark: '#E8858C',
+      main: '#04243C', // Deep navy blue
+      light: '#2A4A66', // Lighter navy
+      dark: '#021729', // Darker navy
       contrastText: '#FFFFFF',
     },
     background: {
@@ -77,8 +77,8 @@ const theme = createTheme({
         root: {
           color: '#718096',
           '&:hover': {
-            backgroundColor: 'rgba(107, 115, 255, 0.08)',
-            color: '#6B73FF',
+            backgroundColor: 'rgba(43, 156, 174, 0.08)',
+            color: '#2B9CAE',
           },
         },
       },

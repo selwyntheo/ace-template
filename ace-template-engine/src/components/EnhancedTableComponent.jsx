@@ -815,7 +815,7 @@ const EnhancedTableComponent = ({
         <Box>
           {/* Column Selection Controls */}
           {advancedOptions.columnSelection && dataState.availableColumns.length > 0 && (
-            <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+            <Box sx={{ mb: 2, p: 2, bgcolor: 'rgba(43, 156, 174, 0.05)', borderRadius: 1, border: '1px solid rgba(43, 156, 174, 0.15)' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <ViewColumn fontSize="small" />
@@ -862,12 +862,12 @@ const EnhancedTableComponent = ({
                     }
                     label={column.headerName}
                     sx={{ 
-                      bgcolor: dataState.selectedColumns.includes(column.field) ? 'primary.light' : 'white',
+                      bgcolor: dataState.selectedColumns.includes(column.field) ? 'rgba(43, 156, 174, 0.12)' : 'white',
                       px: 1,
                       py: 0.5,
                       borderRadius: 1,
                       border: '1px solid',
-                      borderColor: dataState.selectedColumns.includes(column.field) ? 'primary.main' : 'grey.300',
+                      borderColor: dataState.selectedColumns.includes(column.field) ? 'rgba(43, 156, 174, 0.4)' : 'rgba(203, 213, 224, 0.6)',
                       m: 0,
                       '& .MuiTypography-root': {
                         fontSize: '0.75rem'
@@ -936,10 +936,11 @@ const EnhancedTableComponent = ({
           alignItems: 'center', 
           justifyContent: 'center',
           height: '100%',
-          bgcolor: 'grey.50',
-          borderRadius: 1
+          bgcolor: 'rgba(43, 156, 174, 0.03)',
+          borderRadius: 1,
+          border: '1px solid rgba(43, 156, 174, 0.1)'
         }}>
-          <TableChart sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+          <TableChart sx={{ fontSize: 48, color: 'rgba(43, 156, 174, 0.4)', mb: 2 }} />
           <Typography variant="h6" color="text.secondary">
             No Data Available
           </Typography>
