@@ -409,6 +409,13 @@ const useCanvasStore = create(
             previewImage: design.previewImage,
             tags: design.tags || [],
             isPublic: design.isPublic,
+            // Include component/element information for preview
+            elements: (design.components || []).map(component => ({
+              id: component.id,
+              type: component.type,
+              name: component.name,
+            })),
+            componentCount: (design.components || []).length,
           }));
           console.log('Canvas store: Projects set to:', draft.projects);
         }));

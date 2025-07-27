@@ -154,7 +154,7 @@ const ProjectManager = () => {
 
   const getProjectPreview = (project) => {
     // Generate a simple preview based on elements
-    const elementCount = project.elements?.length || 0;
+    const elementCount = project.componentCount || project.elements?.length || 0;
     const elementTypes = [...new Set(project.elements?.map(el => el.type) || [])];
     
     return {
@@ -291,7 +291,7 @@ const ProjectManager = () => {
                     
                     {/* Element count overlay */}
                     <Chip
-                      label={`${preview.elementCount} elements`}
+                      label={`${project.componentCount || 0} components`}
                       size="small"
                       sx={{
                         position: 'absolute',
@@ -326,19 +326,20 @@ const ProjectManager = () => {
                         {formatDate(project.lastModified)}
                       </Typography>
                       <Chip
-                        label={project.status || 'active'}
+                        label={project.status || 'DRAFT'}
                         size="small"
                         color={
+                          project.status === 'PUBLISHED' ? 'success' :
+                          project.status === 'DRAFT' ? 'warning' :
                           project.status === 'active' ? 'success' :
-                          project.status === 'completed' ? 'info' :
-                          project.status === 'draft' ? 'warning' : 'default'
+                          project.status === 'completed' ? 'info' : 'default'
                         }
                         sx={{ ml: 'auto' }}
                       />
                     </Box>
 
                     <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                      {preview.elementCount} elements
+                      {project.componentCount || 0} components
                     </Typography>
 
                     {/* Element types preview */}
