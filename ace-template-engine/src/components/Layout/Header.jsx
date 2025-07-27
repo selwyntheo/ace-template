@@ -18,6 +18,8 @@ import {
   FolderOpen,
   BugReport,
   TableChart,
+  Public,
+  Star,
 } from '@mui/icons-material';
 
 const Header = () => {
@@ -125,6 +127,38 @@ const Header = () => {
             }}
           >
             Projects
+          </Button>
+          <Button
+            color={isActive('/published') ? 'primary' : 'inherit'}
+            startIcon={<Public />}
+            onClick={() => navigate('/published')}
+            sx={{ 
+              textTransform: 'none',
+              color: isActive('/published') ? '#2B9CAE' : '#718096',
+              backgroundColor: isActive('/published') ? 'rgba(43, 156, 174, 0.08)' : 'transparent',
+              '&:hover': {
+                backgroundColor: 'rgba(43, 156, 174, 0.08)',
+                color: '#2B9CAE',
+              },
+            }}
+          >
+            Published
+          </Button>
+          <Button
+            color={isActive('/showcase') ? 'primary' : 'inherit'}
+            startIcon={<Star />}
+            onClick={() => navigate('/showcase')}
+            sx={{ 
+              textTransform: 'none',
+              color: isActive('/showcase') ? '#2B9CAE' : '#718096',
+              backgroundColor: isActive('/showcase') ? 'rgba(43, 156, 174, 0.08)' : 'transparent',
+              '&:hover': {
+                backgroundColor: 'rgba(43, 156, 174, 0.08)',
+                color: '#2B9CAE',
+              },
+            }}
+          >
+            Showcase
           </Button>
           <Button
             color={isActive('/test-suite') ? 'primary' : 'inherit'}

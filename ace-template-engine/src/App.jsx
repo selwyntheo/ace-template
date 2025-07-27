@@ -10,6 +10,7 @@ import CanvasEditor from './components/CanvasEditor';
 import TemplateGallery from './pages/TemplateGallery/TemplateGallery';
 import ProjectManager from './pages/ProjectManager/ProjectManager';
 import PublishedDesigns from './pages/PublishedDesigns/PublishedDesigns';
+import PublicShowcase from './pages/PublicShowcase/PublicShowcase';
 import TestSuiteRunnerEnhanced from './components/TestSuiteRunnerEnhanced';
 
 // Create custom theme with subtle colors
@@ -100,6 +101,7 @@ function App() {
               <Route path="templates" element={<TemplateGallery />} />
               <Route path="projects" element={<ProjectManager />} />
               <Route path="published" element={<PublishedDesigns />} />
+              <Route path="showcase" element={<PublicShowcase />} />
               <Route path="test-suite" element={<TestSuiteRunnerEnhanced />} />
             </Route>
           </Routes>

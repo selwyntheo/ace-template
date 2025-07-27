@@ -19,15 +19,14 @@ import {
   MenuItem,
   CircularProgress,
   Alert,
+  IconButton,
 } from '@mui/material';
 import {
   Search,
   Visibility,
   GetApp,
-  Star,
-  StarBorder,
-  Public,
-  Category,
+  Favorite,
+  FavoriteBorder,
 } from '@mui/icons-material';
 
 import { useCanvasStore } from '../../stores/canvasStore';
@@ -40,11 +39,10 @@ const TemplateGallery = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [favorites, setFavorites] = useState(new Set());
-  const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [templates, setTemplates] = useState([]);
 
-  // Fetch published designs on component mount
   useEffect(() => {
     fetchPublishedDesigns();
   }, []);
@@ -55,40 +53,68 @@ const TemplateGallery = () => {
       setError(null);
       
       // Fetch both published and public designs
-      const [publishedDesigns, publicDesigns] = await Promise.all([
-        designApi.getDesignsByStatus('PUBLISHED'),
-        designApi.getPublicDesigns()
+      const [publishedData, publicData] = await Promise.all([
+        designApi.getDesignsByStatus('PUBLISHED').catch(() => []),
+        designApi.getPublicDesigns().catch(() => [])
       ]);
-      
-      // Combine and deduplicate designs
-      const allTemplates = [...publishedDesigns, ...publicDesigns];
-      const uniqueTemplates = allTemplates.reduce((acc, design) => {
-        if (!acc.find(t => t.id === design.id)) {
-          acc.push({
-            id: design.id,
-            name: design.name,
-            description: design.description || 'No description available',
-            category: design.metadata?.category || 'general',
-            thumbnail: design.previewImage || `https://via.placeholder.com/300x200?text=${encodeURIComponent(design.name)}`,
-            elements: design.components || [],
-            tags: design.tags || [],
-            isPublic: design.isPublic,
-            status: design.status,
-            createdAt: design.createdAt,
-            updatedAt: design.updatedAt,
-            canvasConfig: design.canvasConfig
-          });
-        }
-        return acc;
-      }, []);
-      
-      setTemplates(uniqueTemplates);
-    } catch (err) {
-      console.error('Error fetching published designs:', err);
-      setError('Failed to load templates. Please try again later.');
+
+      // Combine and deduplicate
+      const allDesigns = [...(publishedData || []), ...(publicData || [])];
+      const uniqueDesigns = allDesigns.filter((design, index, self) =>
+        index === self.findIndex(d => d.id === design.id)
+      );
+
+      // Transform to template format
+      const transformedTemplates = uniqueDesigns.map(design => ({
+        id: design.id,
+        name: design.name || 'Untitled Design',
+        description: design.description || 'No description available',
+        category: design.category || (design.isPublic ? 'public' : 'published'),
+        thumbnail: generateThumbnail(design),
+        elements: design.components || [],
+        canvasConfig: design.canvasConfig,
+        tags: extractTags(design),
+        downloads: Math.floor(Math.random() * 500) + 50, // Mock data for now
+        rating: (Math.random() * 2 + 3).toFixed(1),
+        isPublic: design.isPublic,
+        updatedAt: design.updatedAt,
+      }));
+
+      setTemplates(transformedTemplates);
+    } catch (error) {
+      console.error('Error fetching published designs:', error);
+      setError('Failed to load templates. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const generateThumbnail = (design) => {
+    // Simple thumbnail generation based on design components
+    const componentTypes = design.components?.map(c => c.type) || [];
+    const hasTable = componentTypes.includes('table');
+    const hasChart = componentTypes.includes('chart');
+    const hasForm = componentTypes.includes('form') || componentTypes.includes('input');
+    
+    if (hasTable) return 'https://via.placeholder.com/300x200/e3f2fd/1976d2?text=Table+Design';
+    if (hasChart) return 'https://via.placeholder.com/300x200/f3e5f5/7b1fa2?text=Chart+Design';
+    if (hasForm) return 'https://via.placeholder.com/300x200/e8f5e8/388e3c?text=Form+Design';
+    return 'https://via.placeholder.com/300x200/fff3e0/f57c00?text=UI+Design';
+  };
+
+  const extractTags = (design) => {
+    const tags = [];
+    const componentTypes = design.components?.map(c => c.type) || [];
+    const uniqueTypes = [...new Set(componentTypes)];
+    
+    uniqueTypes.forEach(type => {
+      tags.push(type);
+    });
+    
+    if (design.isPublic) tags.push('public');
+    if (design.status === 'PUBLISHED') tags.push('published');
+    
+    return tags.slice(0, 5); // Limit to 5 tags
   };
 
   const handleUseTemplate = async (template) => {
@@ -198,77 +224,107 @@ const TemplateGallery = () => {
         </FormControl>
       </Box>
 
+      {/* Loading State */}
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 4 }}>
+          {error}
+        </Alert>
+      )}
+
       {/* Templates Grid */}
       <Grid container spacing={3}>
         {filteredTemplates.map((template) => (
-          <Grid item xs={12} sm={6} md={4} key={template.id}>
-            <Card
-              sx={{
-                height: '100%',
-                display: 'flex',
+          <Grid item xs={12} sm={6} md={4} lg={3} key={template.id}>
+            <Card 
+              sx={{ 
+                height: '100%', 
+                display: 'flex', 
                 flexDirection: 'column',
-                transition: 'all 0.3s ease',
+                position: 'relative',
                 '&:hover': {
-                  transform: 'translateY(-4px)',
                   boxShadow: 4,
-                },
+                  transform: 'translateY(-2px)',
+                  transition: 'all 0.2s ease-in-out'
+                }
               }}
             >
+              <IconButton
+                sx={{ 
+                  position: 'absolute', 
+                  top: 8, 
+                  right: 8, 
+                  zIndex: 1,
+                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)'
+                  }
+                }}
+                onClick={() => toggleFavorite(template.id)}
+              >
+                {favorites.has(template.id) ? (
+                  <Favorite sx={{ color: 'error.main' }} />
+                ) : (
+                  <FavoriteBorder />
+                )}
+              </IconButton>
+              
               <CardMedia
                 component="img"
-                height="200"
-                image={template.thumbnail}
+                height="160"
+                image={template.thumbnail || 'https://via.placeholder.com/300x160?text=Template'}
                 alt={template.name}
                 sx={{ objectFit: 'cover' }}
               />
               
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                  <Typography variant="h6" component="h2" sx={{ flexGrow: 1 }}>
-                    {template.name}
-                  </Typography>
-                  <Button
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleFavorite(template.id);
-                    }}
-                    sx={{ minWidth: 'auto', p: 0.5 }}
-                  >
-                    {favorites.has(template.id) ? (
-                      <Star color="primary" />
-                    ) : (
-                      <StarBorder />
-                    )}
-                  </Button>
-                </Box>
-                
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              <CardContent sx={{ flexGrow: 1, p: 2 }}>
+                <Typography variant="h6" component="h3" gutterBottom noWrap>
+                  {template.name}
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary" 
+                  sx={{ 
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    mb: 2,
+                    minHeight: '2.5em'
+                  }}
+                >
                   {template.description}
                 </Typography>
                 
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
-                  {template.tags.map((tag) => (
-                    <Chip
-                      key={tag}
-                      label={tag}
-                      size="small"
-                      variant="outlined"
-                      sx={{ fontSize: '0.75rem' }}
-                    />
-                  ))}
-                </Box>
+                {template.tags && template.tags.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
+                    {template.tags.map((tag) => (
+                      <Chip
+                        key={tag}
+                        label={tag}
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontSize: '0.75rem' }}
+                      />
+                    ))}
+                  </Box>
+                )}
                 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography variant="caption" color="text.secondary">
-                    {template.downloads.toLocaleString()} downloads
+                    {template.isPublic ? 'Public' : 'Published'}
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Star sx={{ fontSize: 16, color: 'warning.main' }} />
-                    <Typography variant="caption">
-                      {template.rating}
+                  {template.updatedAt && (
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(template.updatedAt).toLocaleDateString()}
                     </Typography>
-                  </Box>
+                  )}
                 </Box>
               </CardContent>
               
@@ -276,7 +332,7 @@ const TemplateGallery = () => {
                 <Button
                   size="small"
                   startIcon={<Visibility />}
-                  onClick={() => handlePreview(template)}
+                  onClick={() => handlePreviewTemplate(template)}
                 >
                   Preview
                 </Button>
@@ -295,7 +351,7 @@ const TemplateGallery = () => {
         ))}
       </Grid>
 
-      {filteredTemplates.length === 0 && (
+      {!loading && filteredTemplates.length === 0 && (
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <Typography variant="h6" color="text.secondary" gutterBottom>
             No templates found
