@@ -1,0 +1,27 @@
+[{
+  "_id": {
+    "$oid": "6884cbe05d9f18372d65837b"
+  },
+  "fund_code": "GEF001",
+  "fund_name": "Growth Equity Fund",
+  "fund_type": "Open-End Mutual Fund",
+  "inception_date": {
+    "$date": "2020-01-15T00:00:00.000Z"
+  },
+  "fiscal_year_end": "2024-12-31",
+  "base_currency": "USD",
+  "investment_objective": "Long-term capital appreciation through equity investments",
+  "benchmark": "S&P 500 Index",
+  "status": "active",
+  "regulatory_info": {
+    "sec_registration": "811-12345",
+    "cusip": "123456789",
+    "ticker": "GEQFX"
+  },
+  "created_date": {
+    "$date": "2025-07-26T12:36:48.599Z"
+  },
+  "updated_date": {
+    "$date": "2025-07-26T12:36:48.599Z"
+  }
+}]

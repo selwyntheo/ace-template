@@ -1,0 +1,52 @@
+[{
+  "_id": {
+    "$oid": "6884cc6e5d9f18372d6583aa"
+  },
+  "transaction_id": "SHR-2024-001",
+  "fund_code": "GEF001",
+  "transaction_date": {
+    "$date": "2024-01-15T00:00:00.000Z"
+  },
+  "settlement_date": {
+    "$date": "2024-01-17T00:00:00.000Z"
+  },
+  "transaction_type": "Creation",
+  "shares": 100000,
+  "nav_per_share": 24.85,
+  "total_amount": 2485000,
+  "counterparty": "Authorized Participant 1",
+  "reference": "AP1-CRE-001",
+  "status": "Settled",
+  "created_date": {
+    "$date": "2024-01-15T00:00:00.000Z"
+  },
+  "settled_date": {
+    "$date": "2024-01-17T00:00:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc6e5d9f18372d6583ab"
+  },
+  "transaction_id": "SHR-2024-002",
+  "fund_code": "GEF001",
+  "transaction_date": {
+    "$date": "2024-03-20T00:00:00.000Z"
+  },
+  "settlement_date": {
+    "$date": "2024-03-22T00:00:00.000Z"
+  },
+  "transaction_type": "Redemption",
+  "shares": -50000,
+  "nav_per_share": 25.15,
+  "total_amount": -1257500,
+  "counterparty": "Authorized Participant 2",
+  "reference": "AP2-RED-001",
+  "status": "Settled",
+  "created_date": {
+    "$date": "2024-03-20T00:00:00.000Z"
+  },
+  "settled_date": {
+    "$date": "2024-03-22T00:00:00.000Z"
+  }
+}]

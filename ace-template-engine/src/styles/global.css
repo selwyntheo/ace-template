@@ -1,0 +1,133 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Canvas specific styles */
+.canvas-container {
+  position: relative;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.canvas-grid {
+  background-image: 
+    linear-gradient(to right, #e8e8e8 1px, transparent 1px),
+    linear-gradient(to bottom, #e8e8e8 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.canvas-element {
+  position: absolute;
+  cursor: move;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.canvas-element:hover {
+  border-color: #1976d2;
+}
+
+.canvas-element.selected {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 1px #1976d2;
+}
+
+/* Drag and drop styles */
+.dragging {
+  opacity: 0.8;
+  z-index: 1000;
+}
+
+.drop-zone {
+  border: 2px dashed #1976d2;
+  background-color: rgba(25, 118, 210, 0.1);
+}
+
+/* Resize handles */
+.resize-handle {
+  position: absolute;
+  background: #1976d2;
+  border: 1px solid #fff;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.resize-handle.nw { top: -4px; left: -4px; cursor: nw-resize; }
+.resize-handle.ne { top: -4px; right: -4px; cursor: ne-resize; }
+.resize-handle.sw { bottom: -4px; left: -4px; cursor: sw-resize; }
+.resize-handle.se { bottom: -4px; right: -4px; cursor: se-resize; }
+.resize-handle.n { top: -4px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
+.resize-handle.s { bottom: -4px; left: 50%; transform: translateX(-50%); cursor: s-resize; }
+.resize-handle.w { left: -4px; top: 50%; transform: translateY(-50%); cursor: w-resize; }
+.resize-handle.e { right: -4px; top: 50%; transform: translateY(-50%); cursor: e-resize; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Loading animations */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.loading {
+  animation: pulse 2s infinite;
+}
+
+/* Utility classes */
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.absolute-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}

@@ -1,0 +1,150 @@
+[{
+  "_id": {
+    "$oid": "6884cc275d9f18372d658392"
+  },
+  "journal_entry_id": "JE2024-001",
+  "fund_code": "GEF001",
+  "entry_date": {
+    "$date": "2024-01-15T00:00:00.000Z"
+  },
+  "posting_date": {
+    "$date": "2024-01-15T00:00:00.000Z"
+  },
+  "description": "Quarterly dividend from ABC Corp",
+  "reference": "DIV-ABC-Q1",
+  "source": "Investment Income",
+  "total_debit": 125000,
+  "total_credit": 125000,
+  "line_items": [
+    {
+      "line_number": 1,
+      "account_code": "1100",
+      "account_name": "Cash and Cash Equivalents",
+      "debit_amount": 125000,
+      "credit_amount": 0,
+      "description": "Cash received from dividend"
+    },
+    {
+      "line_number": 2,
+      "account_code": "4100",
+      "account_name": "Dividend Income",
+      "debit_amount": 0,
+      "credit_amount": 125000,
+      "description": "Dividend income recognition"
+    }
+  ],
+  "status": "Posted",
+  "created_by": "system",
+  "created_date": {
+    "$date": "2025-07-26T12:37:59.479Z"
+  },
+  "posted_by": "fund_accountant",
+  "posted_date": {
+    "$date": "2024-01-15T00:00:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc275d9f18372d658393"
+  },
+  "journal_entry_id": "JE2024-002",
+  "fund_code": "GEF001",
+  "entry_date": {
+    "$date": "2024-01-20T00:00:00.000Z"
+  },
+  "posting_date": {
+    "$date": "2024-01-20T00:00:00.000Z"
+  },
+  "description": "Monthly management fee",
+  "reference": "MGMT-JAN2024",
+  "source": "Operating Expense",
+  "total_debit": 15000,
+  "total_credit": 15000,
+  "line_items": [
+    {
+      "line_number": 1,
+      "account_code": "5100",
+      "account_name": "Management Fees",
+      "debit_amount": 15000,
+      "credit_amount": 0,
+      "description": "Management fee expense"
+    },
+    {
+      "line_number": 2,
+      "account_code": "2100",
+      "account_name": "Accounts Payable",
+      "debit_amount": 0,
+      "credit_amount": 15000,
+      "description": "Accrued management fee payable"
+    }
+  ],
+  "status": "Posted",
+  "created_by": "system",
+  "created_date": {
+    "$date": "2025-07-26T12:37:59.479Z"
+  },
+  "posted_by": "fund_accountant",
+  "posted_date": {
+    "$date": "2024-01-20T00:00:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc275d9f18372d658394"
+  },
+  "journal_entry_id": "JE2024-003",
+  "fund_code": "GEF001",
+  "entry_date": {
+    "$date": "2024-03-05T00:00:00.000Z"
+  },
+  "posting_date": {
+    "$date": "2024-03-05T00:00:00.000Z"
+  },
+  "description": "Sale of XYZ stock at gain",
+  "reference": "TXN-XYZ-SALE",
+  "source": "Investment Transaction",
+  "total_debit": 950000,
+  "total_credit": 950000,
+  "line_items": [
+    {
+      "line_number": 1,
+      "account_code": "1100",
+      "account_name": "Cash and Cash Equivalents",
+      "debit_amount": 950000,
+      "credit_amount": 0,
+      "description": "Proceeds from stock sale"
+    },
+    {
+      "line_number": 2,
+      "account_code": "1200",
+      "account_name": "Investments at Fair Value",
+      "debit_amount": 0,
+      "credit_amount": 500000,
+      "description": "Removal of investment at cost"
+    },
+    {
+      "line_number": 3,
+      "account_code": "4300",
+      "account_name": "Capital Gains - Realized",
+      "debit_amount": 0,
+      "credit_amount": 450000,
+      "description": "Realized capital gain"
+    }
+  ],
+  "status": "Posted",
+  "investment_details": {
+    "security_id": "XYZ123",
+    "shares_sold": 10000,
+    "cost_basis": 500000,
+    "sale_proceeds": 950000,
+    "realized_gain": 450000
+  },
+  "created_by": "portfolio_manager",
+  "created_date": {
+    "$date": "2025-07-26T12:37:59.479Z"
+  },
+  "posted_by": "fund_accountant",
+  "posted_date": {
+    "$date": "2024-03-05T00:00:00.000Z"
+  }
+}]

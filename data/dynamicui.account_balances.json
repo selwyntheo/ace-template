@@ -1,0 +1,340 @@
+[{
+  "_id": {
+    "$oid": "6884cc425d9f18372d658395"
+  },
+  "fund_code": "GEF001",
+  "account_code": "4100",
+  "account_name": "Dividend Income",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 0,
+  "period_credits": 2450000,
+  "closing_balance": 2450000,
+  "ytd_balance": 2450000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d658396"
+  },
+  "fund_code": "GEF001",
+  "account_code": "4200",
+  "account_name": "Interest Income",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 0,
+  "period_credits": 185000,
+  "closing_balance": 185000,
+  "ytd_balance": 185000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d658397"
+  },
+  "fund_code": "GEF001",
+  "account_code": "4300",
+  "account_name": "Capital Gains - Realized",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 0,
+  "period_credits": 3750000,
+  "closing_balance": 3750000,
+  "ytd_balance": 3750000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d658398"
+  },
+  "fund_code": "GEF001",
+  "account_code": "4400",
+  "account_name": "Foreign Tax Credits",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 0,
+  "period_credits": 25000,
+  "closing_balance": 25000,
+  "ytd_balance": 25000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d658399"
+  },
+  "fund_code": "GEF001",
+  "account_code": "4500",
+  "account_name": "Securities Lending Income",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 0,
+  "period_credits": 35000,
+  "closing_balance": 35000,
+  "ytd_balance": 35000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d65839a"
+  },
+  "fund_code": "GEF001",
+  "account_code": "4600",
+  "account_name": "Other Income",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 0,
+  "period_credits": 12000,
+  "closing_balance": 12000,
+  "ytd_balance": 12000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d65839b"
+  },
+  "fund_code": "GEF001",
+  "account_code": "5100",
+  "account_name": "Management Fees",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 180000,
+  "period_credits": 0,
+  "closing_balance": 180000,
+  "ytd_balance": 180000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d65839c"
+  },
+  "fund_code": "GEF001",
+  "account_code": "5200",
+  "account_name": "Administration Fees",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 45000,
+  "period_credits": 0,
+  "closing_balance": 45000,
+  "ytd_balance": 45000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d65839d"
+  },
+  "fund_code": "GEF001",
+  "account_code": "5300",
+  "account_name": "Transfer Agent Fees",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 32000,
+  "period_credits": 0,
+  "closing_balance": 32000,
+  "ytd_balance": 32000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d65839e"
+  },
+  "fund_code": "GEF001",
+  "account_code": "5400",
+  "account_name": "Custodian Fees",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 18000,
+  "period_credits": 0,
+  "closing_balance": 18000,
+  "ytd_balance": 18000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d65839f"
+  },
+  "fund_code": "GEF001",
+  "account_code": "5500",
+  "account_name": "Audit Fees",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 25000,
+  "period_credits": 0,
+  "closing_balance": 25000,
+  "ytd_balance": 25000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d6583a0"
+  },
+  "fund_code": "GEF001",
+  "account_code": "5600",
+  "account_name": "Legal Fees",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 15000,
+  "period_credits": 0,
+  "closing_balance": 15000,
+  "ytd_balance": 15000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d6583a1"
+  },
+  "fund_code": "GEF001",
+  "account_code": "5700",
+  "account_name": "Registration Fees",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 8000,
+  "period_credits": 0,
+  "closing_balance": 8000,
+  "ytd_balance": 8000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d6583a2"
+  },
+  "fund_code": "GEF001",
+  "account_code": "5800",
+  "account_name": "Printing & Mailing",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 12000,
+  "period_credits": 0,
+  "closing_balance": 12000,
+  "ytd_balance": 12000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d6583a3"
+  },
+  "fund_code": "GEF001",
+  "account_code": "5900",
+  "account_name": "Board of Directors Fees",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 20000,
+  "period_credits": 0,
+  "closing_balance": 20000,
+  "ytd_balance": 20000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d6583a4"
+  },
+  "fund_code": "GEF001",
+  "account_code": "6000",
+  "account_name": "Other Operating Expenses",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 35000,
+  "period_credits": 0,
+  "closing_balance": 35000,
+  "ytd_balance": 35000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc425d9f18372d6583a5"
+  },
+  "fund_code": "GEF001",
+  "account_code": "6100",
+  "account_name": "Interest Expense",
+  "period_end_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "fiscal_year": 2024,
+  "opening_balance": 0,
+  "period_debits": 5000,
+  "period_credits": 0,
+  "closing_balance": 5000,
+  "ytd_balance": 5000,
+  "last_updated": {
+    "$date": "2025-07-26T12:38:26.941Z"
+  }
+}]

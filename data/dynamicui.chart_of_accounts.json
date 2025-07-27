@@ -1,0 +1,248 @@
+[{
+  "_id": {
+    "$oid": "6884cc115d9f18372d65837c"
+  },
+  "account_code": "1100",
+  "account_name": "Cash and Cash Equivalents",
+  "account_type": "Asset",
+  "category": "Current Assets",
+  "is_active": true,
+  "normal_balance": "Debit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d65837d"
+  },
+  "account_code": "1200",
+  "account_name": "Investments at Fair Value",
+  "account_type": "Asset",
+  "category": "Investments",
+  "is_active": true,
+  "normal_balance": "Debit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d65837e"
+  },
+  "account_code": "2100",
+  "account_name": "Accounts Payable",
+  "account_type": "Liability",
+  "category": "Current Liabilities",
+  "is_active": true,
+  "normal_balance": "Credit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d65837f"
+  },
+  "account_code": "2200",
+  "account_name": "Distribution Payable",
+  "account_type": "Liability",
+  "category": "Current Liabilities",
+  "is_active": true,
+  "normal_balance": "Credit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d658380"
+  },
+  "account_code": "3100",
+  "account_name": "Net Assets",
+  "account_type": "Equity",
+  "category": "Net Assets",
+  "is_active": true,
+  "normal_balance": "Credit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d658381"
+  },
+  "account_code": "4100",
+  "account_name": "Dividend Income",
+  "account_type": "Income",
+  "category": "Investment Income",
+  "is_active": true,
+  "normal_balance": "Credit",
+  "tax_classification": "Ordinary Income"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d658382"
+  },
+  "account_code": "4200",
+  "account_name": "Interest Income",
+  "account_type": "Income",
+  "category": "Investment Income",
+  "is_active": true,
+  "normal_balance": "Credit",
+  "tax_classification": "Ordinary Income"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d658383"
+  },
+  "account_code": "4300",
+  "account_name": "Capital Gains - Realized",
+  "account_type": "Income",
+  "category": "Capital Gains",
+  "is_active": true,
+  "normal_balance": "Credit",
+  "tax_classification": "Capital Gains"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d658384"
+  },
+  "account_code": "4400",
+  "account_name": "Foreign Tax Credits",
+  "account_type": "Income",
+  "category": "Investment Income",
+  "is_active": true,
+  "normal_balance": "Credit",
+  "tax_classification": "Tax Credit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d658385"
+  },
+  "account_code": "4500",
+  "account_name": "Securities Lending Income",
+  "account_type": "Income",
+  "category": "Investment Income",
+  "is_active": true,
+  "normal_balance": "Credit",
+  "tax_classification": "Ordinary Income"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d658386"
+  },
+  "account_code": "4600",
+  "account_name": "Other Income",
+  "account_type": "Income",
+  "category": "Investment Income",
+  "is_active": true,
+  "normal_balance": "Credit",
+  "tax_classification": "Ordinary Income"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d658387"
+  },
+  "account_code": "5100",
+  "account_name": "Management Fees",
+  "account_type": "Expense",
+  "category": "Operating Expenses",
+  "is_active": true,
+  "normal_balance": "Debit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d658388"
+  },
+  "account_code": "5200",
+  "account_name": "Administration Fees",
+  "account_type": "Expense",
+  "category": "Operating Expenses",
+  "is_active": true,
+  "normal_balance": "Debit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d658389"
+  },
+  "account_code": "5300",
+  "account_name": "Transfer Agent Fees",
+  "account_type": "Expense",
+  "category": "Operating Expenses",
+  "is_active": true,
+  "normal_balance": "Debit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d65838a"
+  },
+  "account_code": "5400",
+  "account_name": "Custodian Fees",
+  "account_type": "Expense",
+  "category": "Operating Expenses",
+  "is_active": true,
+  "normal_balance": "Debit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d65838b"
+  },
+  "account_code": "5500",
+  "account_name": "Audit Fees",
+  "account_type": "Expense",
+  "category": "Professional Services",
+  "is_active": true,
+  "normal_balance": "Debit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d65838c"
+  },
+  "account_code": "5600",
+  "account_name": "Legal Fees",
+  "account_type": "Expense",
+  "category": "Professional Services",
+  "is_active": true,
+  "normal_balance": "Debit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d65838d"
+  },
+  "account_code": "5700",
+  "account_name": "Registration Fees",
+  "account_type": "Expense",
+  "category": "Regulatory Expenses",
+  "is_active": true,
+  "normal_balance": "Debit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d65838e"
+  },
+  "account_code": "5800",
+  "account_name": "Printing & Mailing",
+  "account_type": "Expense",
+  "category": "Communication Expenses",
+  "is_active": true,
+  "normal_balance": "Debit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d65838f"
+  },
+  "account_code": "5900",
+  "account_name": "Board of Directors Fees",
+  "account_type": "Expense",
+  "category": "Governance Expenses",
+  "is_active": true,
+  "normal_balance": "Debit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d658390"
+  },
+  "account_code": "6000",
+  "account_name": "Other Operating Expenses",
+  "account_type": "Expense",
+  "category": "Operating Expenses",
+  "is_active": true,
+  "normal_balance": "Debit"
+},
+{
+  "_id": {
+    "$oid": "6884cc115d9f18372d658391"
+  },
+  "account_code": "6100",
+  "account_name": "Interest Expense",
+  "account_type": "Expense",
+  "category": "Interest Expenses",
+  "is_active": true,
+  "normal_balance": "Debit"
+}]

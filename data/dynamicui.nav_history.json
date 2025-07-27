@@ -1,0 +1,58 @@
+[{
+  "_id": {
+    "$oid": "6884cc615d9f18372d6583a8"
+  },
+  "fund_code": "GEF001",
+  "nav_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "total_assets": 255500000,
+  "total_liabilities": 500000,
+  "net_assets": 255000000,
+  "shares_outstanding": 10000000,
+  "nav_per_share": 25.5,
+  "accrued_income": 50000,
+  "accrued_expenses": 15000,
+  "components": {
+    "investments_at_fair_value": 254000000,
+    "cash_and_equivalents": 1500000,
+    "receivables": 50000,
+    "accounts_payable": 35000,
+    "accrued_expenses": 15000,
+    "distribution_payable": 450000
+  },
+  "calculated_by": "nav_system",
+  "calculated_date": {
+    "$date": "2024-12-31T20:00:00.000Z"
+  },
+  "status": "Final"
+},
+{
+  "_id": {
+    "$oid": "6884cc615d9f18372d6583a9"
+  },
+  "fund_code": "GEF001",
+  "nav_date": {
+    "$date": "2024-12-30T00:00:00.000Z"
+  },
+  "total_assets": 259000000,
+  "total_liabilities": 500000,
+  "net_assets": 258500000,
+  "shares_outstanding": 10000000,
+  "nav_per_share": 25.85,
+  "accrued_income": 48000,
+  "accrued_expenses": 14000,
+  "components": {
+    "investments_at_fair_value": 257500000,
+    "cash_and_equivalents": 1500000,
+    "receivables": 48000,
+    "accounts_payable": 32000,
+    "accrued_expenses": 14000,
+    "distribution_payable": 454000
+  },
+  "calculated_by": "nav_system",
+  "calculated_date": {
+    "$date": "2024-12-30T20:00:00.000Z"
+  },
+  "status": "Final"
+}]

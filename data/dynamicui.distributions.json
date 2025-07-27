@@ -1,0 +1,100 @@
+[{
+  "_id": {
+    "$oid": "6884cc575d9f18372d6583a6"
+  },
+  "distribution_id": "DIST-2024-001",
+  "fund_code": "GEF001",
+  "distribution_type": "Semi-Annual",
+  "record_date": {
+    "$date": "2024-06-15T00:00:00.000Z"
+  },
+  "ex_dividend_date": {
+    "$date": "2024-06-14T00:00:00.000Z"
+  },
+  "payable_date": {
+    "$date": "2024-06-30T00:00:00.000Z"
+  },
+  "distribution_components": {
+    "ordinary_income": {
+      "amount": 1000000,
+      "per_share": 0.1,
+      "tax_classification": "Ordinary Income"
+    },
+    "capital_gains_short_term": {
+      "amount": 500000,
+      "per_share": 0.05,
+      "tax_classification": "Short-term Capital Gains"
+    },
+    "capital_gains_long_term": {
+      "amount": 500000,
+      "per_share": 0.05,
+      "tax_classification": "Long-term Capital Gains"
+    },
+    "total": {
+      "amount": 2000000,
+      "per_share": 0.2
+    }
+  },
+  "shares_outstanding": 10000000,
+  "nav_before_distribution": 25.7,
+  "nav_after_distribution": 25.5,
+  "status": "Paid",
+  "created_date": {
+    "$date": "2024-06-01T00:00:00.000Z"
+  },
+  "approved_date": {
+    "$date": "2024-06-10T00:00:00.000Z"
+  },
+  "paid_date": {
+    "$date": "2024-06-30T00:00:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6884cc575d9f18372d6583a7"
+  },
+  "distribution_id": "DIST-2024-002",
+  "fund_code": "GEF001",
+  "distribution_type": "Year-End",
+  "record_date": {
+    "$date": "2024-12-15T00:00:00.000Z"
+  },
+  "ex_dividend_date": {
+    "$date": "2024-12-14T00:00:00.000Z"
+  },
+  "payable_date": {
+    "$date": "2024-12-31T00:00:00.000Z"
+  },
+  "distribution_components": {
+    "ordinary_income": {
+      "amount": 2312000,
+      "per_share": 0.2312,
+      "tax_classification": "Ordinary Income"
+    },
+    "capital_gains_long_term": {
+      "amount": 2000000,
+      "per_share": 0.2,
+      "tax_classification": "Long-term Capital Gains"
+    },
+    "total": {
+      "amount": 4312000,
+      "per_share": 0.4312
+    }
+  },
+  "shares_outstanding": 10000000,
+  "nav_before_distribution": 25.93,
+  "nav_after_distribution": 25.5,
+  "status": "Declared",
+  "distribution_calculation": {
+    "net_investment_income": 2312000,
+    "realized_capital_gains": 3750000,
+    "distributed_capital_gains": 2000000,
+    "undistributed_capital_gains": 1750000
+  },
+  "created_date": {
+    "$date": "2024-12-01T00:00:00.000Z"
+  },
+  "approved_date": {
+    "$date": "2024-12-10T00:00:00.000Z"
+  }
+}]
