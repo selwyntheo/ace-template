@@ -236,13 +236,23 @@ const EnhancedTableComponent = ({
           throw new Error(`Unsupported data source: ${dataState.source}`);
       }
 
+      // Deduplicate results to prevent duplicate keys
+      const uniqueResults = results.filter((row, index, self) => {
+        // Try to find a unique identifier for each row
+        const rowId = row.id || row._id || JSON.stringify(row);
+        return index === self.findIndex(r => {
+          const rId = r.id || r._id || JSON.stringify(r);
+          return rId === rowId;
+        });
+      });
+
       const updatedDataState = {
         ...dataState,
-        results,
+        results: uniqueResults,
         columns,
         loading: false,
         lastFetched: new Date().toISOString(),
-        totalRows: results.length
+        totalRows: uniqueResults.length
       };
 
       setDataState(updatedDataState);
@@ -885,35 +895,38 @@ const EnhancedTableComponent = ({
             pageSize={dataState.pageSize}
             loading={dataState.loading}
           getRowId={(row, index) => {
+            // Ensure index is defined
+            const safeIndex = index !== undefined ? index : Math.random().toString(36).substr(2, 9);
+            
             // First priority: standard id field
-            if (row.id) return row.id;
+            if (row.id) return `id_${row.id}`;
             
             // Second priority: MongoDB _id field
             if (row._id) {
               // Handle MongoDB ObjectId (could be string or object)
-              if (typeof row._id === 'string') return row._id;
-              if (row._id.$oid) return row._id.$oid;
+              if (typeof row._id === 'string') return `oid_${row._id}`;
+              if (row._id.$oid) return `oid_${row._id.$oid}`;
               if (row._id.timestamp) {
                 // Combine timestamp with other unique identifiers to avoid duplicates
                 const timestamp = row._id.timestamp.toString();
-                const dateStr = row._id.date ? row._id.date.toString() : '';
-                return `${timestamp}_${dateStr}_${index}`;
+                const dateStr = row._id.date ? row._id.date.toString() : 'nodate';
+                return `ts_${timestamp}_${dateStr}_${safeIndex}`;
               }
-              return JSON.stringify(row._id);
+              return `obj_${JSON.stringify(row._id)}_${safeIndex}`;
             }
             
             // Third priority: business key (like fund_code)
-            if (row.fund_code) return `${row.fund_code}_${index}`;
+            if (row.fund_code) return `fund_${row.fund_code}_${safeIndex}`;
             
             // Fourth priority: combination of available fields
             const keys = Object.keys(row);
             if (keys.length > 0) {
               const firstValue = row[keys[0]];
-              return `${keys[0]}_${firstValue}_${index}`;
+              return `field_${keys[0]}_${firstValue}_${safeIndex}`;
             }
             
             // Last resort: index-based ID
-            return `row_${index}_${Date.now()}`;
+            return `row_${safeIndex}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
           }}
           checkboxSelection={advancedOptions.rowSelection === 'multiple'}
           disableSelectionOnClick

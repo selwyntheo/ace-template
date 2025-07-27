@@ -482,7 +482,7 @@ const componentLibrary = [
 ];
 
 // Canvas Element Component with working drag/resize
-const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) => {
+const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect, isPreviewMode = false }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -827,11 +827,13 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) =>
       position={{ x, y }}
       size={{ width, height }}
       onDragStop={(e, d) => {
+        if (isPreviewMode) return;
         setIsDragging(false);
         onUpdate({ x: d.x, y: d.y });
       }}
-      onDrag={() => setIsDragging(true)}
+      onDrag={() => !isPreviewMode && setIsDragging(true)}
       onResizeStop={(e, direction, ref, delta, position) => {
+        if (isPreviewMode) return;
         setIsResizing(false);
         onUpdate({
           width: ref.offsetWidth,
@@ -840,22 +842,23 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) =>
           y: position.y,
         });
       }}
-      onResize={() => setIsResizing(true)}
+      onResize={() => !isPreviewMode && setIsResizing(true)}
       onClick={(e) => {
+        if (isPreviewMode) return;
         e.stopPropagation();
         onSelect(id);
       }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      disableDragging={locked}
-      enableResizing={!locked}
+      onMouseEnter={() => !isPreviewMode && setIsHovered(true)}
+      onMouseLeave={() => !isPreviewMode && setIsHovered(false)}
+      disableDragging={locked || isPreviewMode}
+      enableResizing={!locked && !isPreviewMode}
       dragHandleClassName="drag-handle"
       bounds="parent"
       style={{
-        border: isSelected ? '2px solid #2B9CAE' : '1px solid transparent',
+        border: (isSelected && !isPreviewMode) ? '2px solid #2B9CAE' : '1px solid transparent',
         borderRadius: '4px',
         backgroundColor: 'white',
-        cursor: locked ? 'not-allowed' : isDragging ? 'grabbing' : 'grab',
+        cursor: isPreviewMode ? 'default' : (locked ? 'not-allowed' : isDragging ? 'grabbing' : 'grab'),
         zIndex: isSelected ? 1000 : isDragging || isResizing ? 999 : 1,
         userSelect: 'none',
       }}
@@ -868,13 +871,13 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) =>
           background: '#2B9CAE',
           border: '1px solid white',
           borderRadius: '50%',
-          display: isSelected ? 'block' : 'none',
+          display: (isSelected && !isPreviewMode) ? 'block' : 'none',
         },
       }}
     >
       <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
         {/* Drag Handle - Invisible overlay that allows dragging */}
-        {!locked && (
+        {!locked && !isPreviewMode && (
           <Box
             className="drag-handle"
             sx={{
@@ -884,8 +887,8 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) =>
               right: 0,
               height: '20px',
               cursor: isDragging ? 'grabbing' : 'grab',
-              backgroundColor: isSelected || isHovered ? 'rgba(107, 115, 255, 0.08)' : 'transparent',
-              borderBottom: isSelected || isHovered ? '1px dashed rgba(107, 115, 255, 0.3)' : 'none',
+              backgroundColor: isSelected || isHovered ? 'rgba(43, 156, 174, 0.08)' : 'transparent',
+              borderBottom: isSelected || isHovered ? '1px dashed rgba(43, 156, 174, 0.3)' : 'none',
               zIndex: 10,
               display: 'flex',
               alignItems: 'center',
@@ -914,7 +917,7 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect }) =>
           sx={{ 
             width: '100%', 
             height: '100%', 
-            paddingTop: !locked ? '20px' : 0,
+            paddingTop: (!locked && !isPreviewMode) ? '20px' : 0,
             pointerEvents: isDragging ? 'none' : 'auto',
           }}
         >
@@ -1901,7 +1904,7 @@ const CanvasEditor = () => {
           fullWidth
           PaperProps={{ sx: { height: '90vh' } }}
         >
-          <DialogTitle sx={{ bgcolor: '#A78BFA', color: 'white' }}>
+          <DialogTitle sx={{ bgcolor: '#2B9CAE', color: 'white' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="h6">Preview: {projectName}</Typography>
               <Box>
@@ -1956,37 +1959,18 @@ const CanvasEditor = () => {
                       width: element.width,
                       height: element.height,
                       opacity: element.visibility ? 1 : 0.5,
+                      pointerEvents: 'none', // Disable interactions in preview
                     }}
                   >
-                    {/* Render preview of element without interaction */}
-                    {element.type === 'text' && (
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          width: '100%',
-                          height: '100%',
-                          padding: '8px',
-                          overflow: 'hidden',
-                          ...element.styles,
-                        }}
-                      >
-                        {element.properties?.content || 'Sample Text'}
-                      </Typography>
-                    )}
-                    {element.type === 'button' && (
-                      <Button
-                        variant="contained"
-                        sx={{
-                          width: '100%',
-                          height: '100%',
-                          fontSize: '14px',
-                          ...element.styles,
-                        }}
-                      >
-                        {element.properties?.label || 'Button'}
-                      </Button>
-                    )}
-                    {/* Add more preview renderings for other element types */}
+                    {/* Render preview using CanvasElement component in preview mode */}
+                    <CanvasElement
+                      element={element}
+                      isSelected={false}
+                      onUpdate={() => {}}
+                      onDelete={() => {}}
+                      onSelect={() => {}}
+                      isPreviewMode={true}
+                    />
                   </Box>
                 ))}
               </Box>
@@ -1996,7 +1980,7 @@ const CanvasEditor = () => {
 
         {/* Publish Dialog */}
         <Dialog open={publishDialogOpen} onClose={() => setPublishDialogOpen(false)} maxWidth="md" fullWidth>
-          <DialogTitle sx={{ bgcolor: '#FFA726', color: 'white' }}>
+          <DialogTitle sx={{ bgcolor: '#5A7A8F', color: 'white' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="h6">Publish Design</Typography>
               <IconButton onClick={() => setPublishDialogOpen(false)} sx={{ color: 'white' }}>
