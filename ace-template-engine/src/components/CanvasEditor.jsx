@@ -31,7 +31,19 @@ import {
   Card,
   CardHeader,
   CardContent,
-  Badge
+  Badge,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Stepper,
+  Step,
+  StepLabel,
+  Stack,
+  Fab,
+  Backdrop,
+  CircularProgress,
+  AppBar
 } from '@mui/material';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -78,7 +90,17 @@ import {
   Timeline,
   Autorenew,
   Warning,
-  Info
+  Info,
+  Publish,
+  History,
+  Download,
+  Upload,
+  Share,
+  FileCopy,
+  CloudUpload,
+  Close,
+  PlayArrow,
+  Stop
 } from '@mui/icons-material';
 import { useCanvasStore } from '../stores/canvasStore';
 import EnhancedTableComponent from './EnhancedTableComponent';
@@ -974,6 +996,25 @@ const CanvasEditor = () => {
   const [showGrid, setShowGrid] = useState(true);
   const [previewMode, setPreviewMode] = useState(false);
 
+  // Enhanced state for save/naming/version functionality
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [versionDialogOpen, setVersionDialogOpen] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [projectName, setProjectName] = useState(projectId ? `Project ${projectId}` : 'Untitled Design');
+  const [projectDescription, setProjectDescription] = useState('');
+  const [version, setVersion] = useState('1.0.0');
+  const [versionNotes, setVersionNotes] = useState('');
+  const [projectMetadata, setProjectMetadata] = useState({
+    author: 'Current User',
+    tags: [],
+    category: 'Web Design',
+    isPublic: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
+
   const canvasRef = useRef(null);
 
   // Generate unique ID for new elements
@@ -1028,6 +1069,166 @@ const CanvasEditor = () => {
     }
   }, [selectElement]);
 
+  // Enhanced save functionality
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    try {
+      const designData = {
+        id: projectId || `design_${Date.now()}`,
+        name: projectName,
+        description: projectDescription,
+        version,
+        elements,
+        canvasSettings,
+        metadata: {
+          ...projectMetadata,
+          updatedAt: new Date().toISOString(),
+          elementCount: elements.length
+        }
+      };
+
+      // Simulate API call to save design
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Here you would typically make an API call to your backend
+      console.log('Saving design:', designData);
+      localStorage.setItem(`design_${designData.id}`, JSON.stringify(designData));
+
+      setNotification({
+        open: true,
+        message: `Design "${projectName}" saved successfully!`,
+        severity: 'success',
+      });
+      setSaveDialogOpen(false);
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: 'Failed to save design. Please try again.',
+        severity: 'error',
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [projectId, projectName, projectDescription, version, elements, canvasSettings, projectMetadata]);
+
+  // Version management
+  const handleCreateVersion = useCallback(async () => {
+    setSaving(true);
+    try {
+      const versionData = {
+        version,
+        notes: versionNotes,
+        timestamp: new Date().toISOString(),
+        elements: elements.length,
+        snapshot: elements
+      };
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log('Creating version:', versionData);
+      
+      setNotification({
+        open: true,
+        message: `Version ${version} created successfully!`,
+        severity: 'success',
+      });
+      setVersionDialogOpen(false);
+      setVersionNotes('');
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: 'Failed to create version. Please try again.',
+        severity: 'error',
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [version, versionNotes, elements]);
+
+  // Preview functionality
+  const handlePreview = useCallback(() => {
+    setPreviewDialogOpen(true);
+  }, []);
+
+  // Export functionality
+  const handleExport = useCallback(async (format) => {
+    setSaving(true);
+    try {
+      const exportData = {
+        format,
+        name: projectName,
+        elements,
+        canvasSettings,
+        timestamp: new Date().toISOString()
+      };
+
+      // Simulate export process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      if (format === 'json') {
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        const exportFileDefaultName = `${projectName.replace(/\s+/g, '_')}_design.json`;
+        
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+      }
+
+      setNotification({
+        open: true,
+        message: `Design exported as ${format.toUpperCase()} successfully!`,
+        severity: 'success',
+      });
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: 'Export failed. Please try again.',
+        severity: 'error',
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [projectName, elements, canvasSettings]);
+
+  // Publish functionality
+  const handlePublish = useCallback(async () => {
+    setSaving(true);
+    try {
+      const publishData = {
+        ...projectMetadata,
+        name: projectName,
+        description: projectDescription,
+        version,
+        elements,
+        canvasSettings,
+        publishedAt: new Date().toISOString()
+      };
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      console.log('Publishing design:', publishData);
+      
+      setNotification({
+        open: true,
+        message: `Design "${projectName}" published successfully!`,
+        severity: 'success',
+      });
+      setPublishDialogOpen(false);
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: 'Failed to publish design. Please try again.',
+        severity: 'error',
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [projectName, projectDescription, version, elements, canvasSettings, projectMetadata]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -1071,95 +1272,147 @@ const CanvasEditor = () => {
   return (
     <DndProvider backend={HTML5Backend}>
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        {/* Editor Toolbar */}
-        <Paper 
-          elevation={1} 
+        {/* Enhanced Editor Toolbar with contrasting colors */}
+        <AppBar 
+          position="static" 
+          elevation={2}
           sx={{ 
-            width: '100%', 
+            backgroundColor: '#2E7D32', // Dark green contrasting with main app's blue
+            color: 'white',
             borderRadius: 0,
-            flexShrink: 0
+            '& .MuiToolbar-root': {
+              minHeight: '56px',
+            }
           }}
         >
-          <Toolbar variant="dense" sx={{ minHeight: '48px', bgcolor: 'primary.main', color: 'white' }}>
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              Canvas Editor {projectId && `- Project ${projectId}`}
-            </Typography>
+          <Toolbar variant="dense">
+            <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+              <Typography variant="h6" sx={{ mr: 3, fontWeight: 600 }}>
+                {projectName}
+              </Typography>
+              
+              <Chip 
+                label={`v${version}`} 
+                size="small" 
+                sx={{ 
+                  backgroundColor: 'rgba(255,255,255,0.2)', 
+                  color: 'white',
+                  mr: 2
+                }} 
+              />
+              
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                {elements.length} element{elements.length !== 1 ? 's' : ''}
+              </Typography>
+            </Box>
             
-            <Tooltip title="Undo">
-              <span>
-                <IconButton color="inherit" onClick={undo} disabled={!canUndo} size="small">
-                  <UndoIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            
-            <Tooltip title="Redo">
-              <span>
-                <IconButton color="inherit" onClick={redo} disabled={!canRedo} size="small">
-                  <RedoIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            
-            <Divider orientation="vertical" flexItem sx={{ mx: 1, bgcolor: 'rgba(255,255,255,0.3)' }} />
-            
-            <Tooltip title="Zoom Out">
-              <IconButton 
-                color="inherit" 
-                onClick={() => setZoom(Math.max(25, zoom - 25))}
-                disabled={zoom <= 25}
-                size="small"
-              >
-                <ZoomOutIcon />
-              </IconButton>
-            </Tooltip>
-            
-            <Typography variant="body2" sx={{ mx: 1 }}>
-              {zoom}%
-            </Typography>
-            
-            <Tooltip title="Zoom In">
-              <IconButton 
-                color="inherit" 
-                onClick={() => setZoom(Math.min(200, zoom + 25))}
-                disabled={zoom >= 200}
-                size="small"
-              >
-                <ZoomInIcon />
-              </IconButton>
-            </Tooltip>
-            
-            <Divider orientation="vertical" flexItem sx={{ mx: 1, bgcolor: 'rgba(255,255,255,0.3)' }} />
-            
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={showGrid}
-                  onChange={(e) => setShowGrid(e.target.checked)}
+            {/* Action Buttons */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Tooltip title="Undo (Ctrl+Z)">
+                <span>
+                  <IconButton color="inherit" onClick={undo} disabled={!canUndo} size="small">
+                    <UndoIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              
+              <Tooltip title="Redo (Ctrl+Y)">
+                <span>
+                  <IconButton color="inherit" onClick={redo} disabled={!canRedo} size="small">
+                    <RedoIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              
+              <Divider orientation="vertical" flexItem sx={{ mx: 1, bgcolor: 'rgba(255,255,255,0.3)' }} />
+              
+              <Tooltip title="Zoom Out">
+                <IconButton 
+                  color="inherit" 
+                  onClick={() => setZoom(Math.max(25, zoom - 25))}
+                  disabled={zoom <= 25}
                   size="small"
-                />
-              }
-              label="Grid"
-              sx={{ color: 'white', mr: 2 }}
-            />
-            
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={previewMode}
-                  onChange={(e) => setPreviewMode(e.target.checked)}
+                >
+                  <ZoomOutIcon />
+                </IconButton>
+              </Tooltip>
+              
+              <Typography variant="body2" sx={{ mx: 1, minWidth: '45px', textAlign: 'center' }}>
+                {zoom}%
+              </Typography>
+              
+              <Tooltip title="Zoom In">
+                <IconButton 
+                  color="inherit" 
+                  onClick={() => setZoom(Math.min(200, zoom + 25))}
+                  disabled={zoom >= 200}
                   size="small"
-                />
-              }
-              label="Preview"
-              sx={{ color: 'white', mr: 2 }}
-            />
-            
-            <Button color="inherit" startIcon={<SaveIcon />} size="small">
-              Save
-            </Button>
+                >
+                  <ZoomInIcon />
+                </IconButton>
+              </Tooltip>
+              
+              <Divider orientation="vertical" flexItem sx={{ mx: 1, bgcolor: 'rgba(255,255,255,0.3)' }} />
+              
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={showGrid}
+                    onChange={(e) => setShowGrid(e.target.checked)}
+                    size="small"
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: 'white',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: 'rgba(255,255,255,0.5)',
+                      },
+                    }}
+                  />
+                }
+                label="Grid"
+                sx={{ color: 'white', mr: 2, ml: 1 }}
+              />
+              
+              <Divider orientation="vertical" flexItem sx={{ mx: 1, bgcolor: 'rgba(255,255,255,0.3)' }} />
+              
+              <Button 
+                color="inherit" 
+                startIcon={<PreviewIcon />} 
+                onClick={handlePreview}
+                size="small"
+                sx={{ mr: 1 }}
+              >
+                Preview
+              </Button>
+              
+              <Button 
+                color="inherit" 
+                startIcon={<History />} 
+                onClick={() => setVersionDialogOpen(true)}
+                size="small"
+                sx={{ mr: 1 }}
+              >
+                Version
+              </Button>
+              
+              <Button 
+                variant="contained"
+                startIcon={<SaveIcon />} 
+                onClick={() => setSaveDialogOpen(true)}
+                size="small"
+                sx={{ 
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255,255,255,0.3)',
+                  }
+                }}
+              >
+                Save
+              </Button>
+            </Box>
           </Toolbar>
-        </Paper>
+        </AppBar>
 
         {/* Main Content Area */}
         <Box sx={{ display: 'flex', width: '100%', flexGrow: 1, overflow: 'hidden' }}>
@@ -1388,6 +1641,385 @@ const CanvasEditor = () => {
             {notification.message}
           </Alert>
         </Snackbar>
+
+        {/* Enhanced Save Dialog */}
+        <Dialog open={saveDialogOpen} onClose={() => setSaveDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ bgcolor: '#2E7D32', color: 'white' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h6">Save Design</Typography>
+              <IconButton onClick={() => setSaveDialogOpen(false)} sx={{ color: 'white' }}>
+                <Close />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent sx={{ mt: 2 }}>
+            <Stack spacing={3}>
+              <TextField
+                fullWidth
+                label="Project Name"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                variant="outlined"
+              />
+              <TextField
+                fullWidth
+                label="Description"
+                value={projectDescription}
+                onChange={(e) => setProjectDescription(e.target.value)}
+                multiline
+                rows={3}
+                variant="outlined"
+              />
+              <TextField
+                fullWidth
+                label="Version"
+                value={version}
+                onChange={(e) => setVersion(e.target.value)}
+                variant="outlined"
+              />
+              <FormControl fullWidth>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={projectMetadata.category}
+                  label="Category"
+                  onChange={(e) => setProjectMetadata(prev => ({ ...prev, category: e.target.value }))}
+                >
+                  <MenuItem value="Web Design">Web Design</MenuItem>
+                  <MenuItem value="Mobile App">Mobile App</MenuItem>
+                  <MenuItem value="Dashboard">Dashboard</MenuItem>
+                  <MenuItem value="Landing Page">Landing Page</MenuItem>
+                  <MenuItem value="E-commerce">E-commerce</MenuItem>
+                  <MenuItem value="Other">Other</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={projectMetadata.isPublic}
+                    onChange={(e) => setProjectMetadata(prev => ({ ...prev, isPublic: e.target.checked }))}
+                  />
+                }
+                label="Make Public"
+              />
+              <Box sx={{ bgcolor: 'grey.100', p: 2, borderRadius: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Design Summary:</strong>
+                </Typography>
+                <Typography variant="body2">
+                  • {elements.length} component{elements.length !== 1 ? 's' : ''}
+                </Typography>
+                <Typography variant="body2">
+                  • Canvas size: {canvasSettings.width} × {canvasSettings.height}
+                </Typography>
+                <Typography variant="body2">
+                  • Last modified: {new Date().toLocaleString()}
+                </Typography>
+              </Box>
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ p: 3 }}>
+            <Button onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
+            <Button 
+              variant="contained" 
+              onClick={handleSave}
+              disabled={saving || !projectName.trim()}
+              startIcon={saving ? <CircularProgress size={16} /> : <SaveIcon />}
+              sx={{ bgcolor: '#2E7D32' }}
+            >
+              {saving ? 'Saving...' : 'Save Design'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Version Dialog */}
+        <Dialog open={versionDialogOpen} onClose={() => setVersionDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ bgcolor: '#2E7D32', color: 'white' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h6">Create New Version</Typography>
+              <IconButton onClick={() => setVersionDialogOpen(false)} sx={{ color: 'white' }}>
+                <Close />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent sx={{ mt: 2 }}>
+            <Stack spacing={3}>
+              <TextField
+                fullWidth
+                label="Version Number"
+                value={version}
+                onChange={(e) => setVersion(e.target.value)}
+                variant="outlined"
+                helperText="Use semantic versioning (e.g., 1.0.0, 1.1.0, 2.0.0)"
+              />
+              <TextField
+                fullWidth
+                label="Version Notes"
+                value={versionNotes}
+                onChange={(e) => setVersionNotes(e.target.value)}
+                multiline
+                rows={4}
+                variant="outlined"
+                placeholder="Describe what changed in this version..."
+              />
+              <Box sx={{ bgcolor: 'grey.100', p: 2, borderRadius: 1 }}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <strong>Current State:</strong>
+                </Typography>
+                <Typography variant="body2">
+                  • {elements.length} component{elements.length !== 1 ? 's' : ''}
+                </Typography>
+                <Typography variant="body2">
+                  • Canvas: {canvasSettings.width} × {canvasSettings.height}
+                </Typography>
+              </Box>
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ p: 3 }}>
+            <Button onClick={() => setVersionDialogOpen(false)}>Cancel</Button>
+            <Button 
+              variant="contained" 
+              onClick={handleCreateVersion}
+              disabled={saving || !version.trim()}
+              startIcon={saving ? <CircularProgress size={16} /> : <History />}
+              sx={{ bgcolor: '#2E7D32' }}
+            >
+              {saving ? 'Creating...' : 'Create Version'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Preview Dialog */}
+        <Dialog 
+          open={previewDialogOpen} 
+          onClose={() => setPreviewDialogOpen(false)} 
+          maxWidth="lg" 
+          fullWidth
+          PaperProps={{ sx: { height: '90vh' } }}
+        >
+          <DialogTitle sx={{ bgcolor: '#2E7D32', color: 'white' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h6">Preview: {projectName}</Typography>
+              <Box>
+                <Button 
+                  color="inherit" 
+                  startIcon={<Download />}
+                  onClick={() => handleExport('json')}
+                  sx={{ mr: 1 }}
+                >
+                  Export
+                </Button>
+                <IconButton onClick={() => setPreviewDialogOpen(false)} sx={{ color: 'white' }}>
+                  <Close />
+                </IconButton>
+              </Box>
+            </Box>
+          </DialogTitle>
+          <DialogContent sx={{ p: 0 }}>
+            <Box
+              sx={{
+                position: 'relative',
+                width: '100%',
+                height: '100%',
+                overflow: 'auto',
+                backgroundColor: '#f5f5f5',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                p: 2
+              }}
+            >
+              <Box
+                sx={{
+                  position: 'relative',
+                  width: canvasSettings.width,
+                  height: canvasSettings.height,
+                  backgroundColor: 'white',
+                  border: '1px solid #e0e0e0',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  transform: 'scale(0.8)',
+                  transformOrigin: 'center',
+                }}
+              >
+                {elements.map((element) => (
+                  <Box
+                    key={element.id}
+                    sx={{
+                      position: 'absolute',
+                      left: element.x,
+                      top: element.y,
+                      width: element.width,
+                      height: element.height,
+                      opacity: element.visibility ? 1 : 0.5,
+                    }}
+                  >
+                    {/* Render preview of element without interaction */}
+                    {element.type === 'text' && (
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          width: '100%',
+                          height: '100%',
+                          padding: '8px',
+                          overflow: 'hidden',
+                          ...element.styles,
+                        }}
+                      >
+                        {element.properties?.content || 'Sample Text'}
+                      </Typography>
+                    )}
+                    {element.type === 'button' && (
+                      <Button
+                        variant="contained"
+                        sx={{
+                          width: '100%',
+                          height: '100%',
+                          fontSize: '14px',
+                          ...element.styles,
+                        }}
+                      >
+                        {element.properties?.label || 'Button'}
+                      </Button>
+                    )}
+                    {/* Add more preview renderings for other element types */}
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          </DialogContent>
+        </Dialog>
+
+        {/* Publish Dialog */}
+        <Dialog open={publishDialogOpen} onClose={() => setPublishDialogOpen(false)} maxWidth="md" fullWidth>
+          <DialogTitle sx={{ bgcolor: '#2E7D32', color: 'white' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h6">Publish Design</Typography>
+              <IconButton onClick={() => setPublishDialogOpen(false)} sx={{ color: 'white' }}>
+                <Close />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent sx={{ mt: 2 }}>
+            <Stepper activeStep={0} sx={{ mb: 3 }}>
+              <Step>
+                <StepLabel>Prepare</StepLabel>
+              </Step>
+              <Step>
+                <StepLabel>Review</StepLabel>
+              </Step>
+              <Step>
+                <StepLabel>Publish</StepLabel>
+              </Step>
+            </Stepper>
+            <Stack spacing={3}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Project Name"
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Version"
+                    value={version}
+                    onChange={(e) => setVersion(e.target.value)}
+                    variant="outlined"
+                  />
+                </Grid>
+              </Grid>
+              <TextField
+                fullWidth
+                label="Description"
+                value={projectDescription}
+                onChange={(e) => setProjectDescription(e.target.value)}
+                multiline
+                rows={3}
+                variant="outlined"
+              />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={projectMetadata.isPublic}
+                      onChange={(e) => setProjectMetadata(prev => ({ ...prev, isPublic: e.target.checked }))}
+                    />
+                  }
+                  label="Public Template"
+                />
+                <FormControlLabel
+                  control={<Switch defaultChecked />}
+                  label="Allow Comments"
+                />
+                <FormControlLabel
+                  control={<Switch />}
+                  label="Featured Design"
+                />
+              </Box>
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ p: 3 }}>
+            <Button onClick={() => setPublishDialogOpen(false)}>Cancel</Button>
+            <Button 
+              variant="outlined" 
+              startIcon={<Share />}
+              sx={{ mr: 1 }}
+            >
+              Share Link
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={handlePublish}
+              disabled={saving}
+              startIcon={saving ? <CircularProgress size={16} /> : <Publish />}
+              sx={{ bgcolor: '#2E7D32' }}
+            >
+              {saving ? 'Publishing...' : 'Publish Design'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Loading Backdrop */}
+        <Backdrop open={saving} sx={{ zIndex: 9999 }}>
+          <CircularProgress color="inherit" />
+        </Backdrop>
+
+        {/* Floating Action Buttons for Quick Actions */}
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1,
+            zIndex: 1000,
+          }}
+        >
+          <Tooltip title="Quick Save" placement="left">
+            <Fab
+              size="small"
+              color="primary"
+              onClick={handleSave}
+              sx={{ bgcolor: '#2E7D32' }}
+            >
+              <SaveIcon />
+            </Fab>
+          </Tooltip>
+          <Tooltip title="Publish" placement="left">
+            <Fab
+              size="small"
+              onClick={() => setPublishDialogOpen(true)}
+              sx={{ bgcolor: '#FF9800', color: 'white' }}
+            >
+              <CloudUpload />
+            </Fab>
+          </Tooltip>
+        </Box>
       </Box>
     </DndProvider>
   );
