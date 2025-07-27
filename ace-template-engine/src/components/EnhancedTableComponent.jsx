@@ -61,7 +61,7 @@ const EnhancedTableComponent = ({
 }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [dataState, setDataState] = useState({
-    source: 'designs',
+    source: 'projects',
     query: '',
     results: [],
     columns: [],
@@ -78,6 +78,13 @@ const EnhancedTableComponent = ({
   const [queryDialog, setQueryDialog] = useState(false);
   const [saveDialog, setSaveDialog] = useState(false);
   const [columnSelectionDialog, setColumnSelectionDialog] = useState(false);
+  const [columnConfigDialog, setColumnConfigDialog] = useState(false);
+  const [selectedColumnForConfig, setSelectedColumnForConfig] = useState(null);
+  const [columnConfigs, setColumnConfigs] = useState({});
+  const [customQueryDialog, setCustomQueryDialog] = useState(false);
+  const [queryMode, setQueryMode] = useState('simple'); // 'simple' or 'advanced'
+  const [customQuery, setCustomQuery] = useState('');
+  const [queryHistory, setQueryHistory] = useState([]);
   const [advancedOptions, setAdvancedOptions] = useState({
     autoRefresh: false,
     refreshInterval: 30000,
@@ -92,17 +99,10 @@ const EnhancedTableComponent = ({
   // Data source configurations - Updated to use generic MongoDB API
   const dataSources = [
     { 
-      value: 'designs', 
-      label: 'Designs Collection', 
-      endpoint: '/designs',
-      description: 'All design data from the database',
-      useGenericApi: false
-    },
-    { 
       value: 'projects', 
       label: 'Projects Collection', 
       endpoint: '/projects',
-      description: 'Project data (alias for designs)',
+      description: 'All project/design data from the database',
       useGenericApi: false
     },
     { 
@@ -158,8 +158,22 @@ const EnhancedTableComponent = ({
       value: 'custom', 
       label: 'Custom Query', 
       endpoint: '/custom',
-      description: 'Execute custom database queries',
+      description: 'Execute custom database queries (MongoDB, SQL-like syntax)',
       useGenericApi: false
+    },
+    { 
+      value: 'mongodb_query', 
+      label: 'MongoDB Query', 
+      endpoint: '/mongo/query',
+      description: 'Execute native MongoDB queries with aggregation pipeline',
+      useGenericApi: true
+    },
+    { 
+      value: 'sql_query', 
+      label: 'SQL-like Query', 
+      endpoint: '/sql/query',
+      description: 'Execute SQL-like queries translated to MongoDB',
+      useGenericApi: true
     }
   ];
 
@@ -178,6 +192,14 @@ const EnhancedTableComponent = ({
       }));
     }
   }, [component]);
+
+  // Auto-load data in preview mode
+  useEffect(() => {
+    if (!isEditMode && component?.properties?.dataConfig) {
+      // In preview mode, automatically execute the saved query
+      executeQuery();
+    }
+  }, [isEditMode, component?.properties?.dataConfig]);
 
   // Auto-refresh functionality
   useEffect(() => {
@@ -200,14 +222,12 @@ const EnhancedTableComponent = ({
       let results = [];
       let columns = [];
       
-      switch (dataState.source) {
-        case 'designs':
-          results = await designApi.getAllDesigns();
-          columns = generateColumnsFromData(results, 'designs');
-          break;
-          
+      // Get current state values at execution time
+      const currentDataState = dataState;
+      
+      switch (currentDataState.source) {
         case 'projects':
-          results = await designApi.getAllDesigns(); // Projects endpoint is alias
+          results = await designApi.getAllDesigns(); // Backend uses designs API for projects
           columns = generateColumnsFromData(results, 'projects');
           break;
           
@@ -218,22 +238,40 @@ const EnhancedTableComponent = ({
         case 'journal_entries':
         case 'nav_history':
         case 'share_transactions':
-          results = await fetchCollectionData(dataState.source);
+          results = await fetchCollectionData(currentDataState.source);
           columns = generateColumnsFromData(results, 'collection');
           break;
           
         case 'custom':
-          if (dataState.query.trim()) {
+          if (currentDataState.query.trim()) {
             // For demo, we'll execute predefined queries
-            results = await executeCustomQuery(dataState.query);
+            results = await executeCustomQuery(currentDataState.query);
             columns = generateColumnsFromData(results, 'custom');
           } else {
             throw new Error('Custom query is required');
           }
           break;
+
+        case 'mongodb_query':
+          if (currentDataState.query.trim()) {
+            results = await executeMongoQuery(currentDataState.query);
+            columns = generateColumnsFromData(results, 'custom');
+          } else {
+            throw new Error('MongoDB query is required');
+          }
+          break;
+
+        case 'sql_query':
+          if (currentDataState.query.trim()) {
+            results = await executeSQLQuery(currentDataState.query);
+            columns = generateColumnsFromData(results, 'custom');
+          } else {
+            throw new Error('SQL query is required');
+          }
+          break;
           
         default:
-          throw new Error(`Unsupported data source: ${dataState.source}`);
+          throw new Error(`Unsupported data source: ${currentDataState.source}`);
       }
 
       // Deduplicate results to prevent duplicate keys
@@ -246,24 +284,16 @@ const EnhancedTableComponent = ({
         });
       });
 
-      const updatedDataState = {
-        ...dataState,
+      setDataState(prev => ({
+        ...prev,
         results: uniqueResults,
         columns,
+        availableColumns: columns,
+        selectedColumns: advancedOptions.showAllColumns ? columns.map(col => col.field) : prev.selectedColumns.filter(field => columns.some(col => col.field === field)),
         loading: false,
         lastFetched: new Date().toISOString(),
         totalRows: uniqueResults.length
-      };
-
-      setDataState(updatedDataState);
-      
-      // Update component properties
-      if (onPropertyChange) {
-        onPropertyChange('properties', {
-          ...component.properties,
-          dataConfig: updatedDataState
-        });
-      }
+      }));
       
     } catch (error) {
       console.error('Query execution error:', error);
@@ -273,7 +303,22 @@ const EnhancedTableComponent = ({
         error: error.message
       }));
     }
-  }, [dataState.source, dataState.query, component, onPropertyChange]);
+  }, [dataState]);
+
+  // Update component properties when data state changes (separate from executeQuery)
+  useEffect(() => {
+    if (onPropertyChange && dataState.results.length > 0) {
+      onPropertyChange('properties', {
+        ...component?.properties,
+        dataConfig: {
+          source: dataState.source,
+          query: dataState.query,
+          lastFetched: dataState.lastFetched,
+          totalRows: dataState.totalRows
+        }
+      });
+    }
+  }, [dataState.results, dataState.source, dataState.query, dataState.lastFetched, dataState.totalRows, onPropertyChange, component?.properties]);
 
   // Fetch data from MongoDB collections using generic API
   const fetchCollectionData = async (collectionName) => {
@@ -392,14 +437,13 @@ const EnhancedTableComponent = ({
     const columns = [];
 
     switch (type) {
-      case 'designs':
       case 'projects':
         columns.push(
-          { field: 'id', headerName: 'ID', width: 200, sortable: true },
+          { field: 'id', headerName: 'Project ID', width: 200, sortable: true },
           { 
             field: 'name', 
-            headerName: 'Name', 
-            width: 200, 
+            headerName: 'Project Name', 
+            width: 250, 
             sortable: true,
             editable: true
           },
@@ -479,23 +523,73 @@ const EnhancedTableComponent = ({
         });
     }
 
-    // Store all available columns for selection
-    setDataState(prev => ({
-      ...prev,
-      availableColumns: columns,
-      selectedColumns: advancedOptions.showAllColumns ? columns.map(col => col.field) : []
-    }));
-
     return columns;
   };
 
   // Get filtered columns based on user selection
   const getDisplayColumns = () => {
-    if (!advancedOptions.columnSelection || advancedOptions.showAllColumns) {
-      return dataState.columns;
+    let columns = dataState.columns;
+    
+    // Apply column configurations
+    columns = columns.map(column => {
+      const config = columnConfigs[column.field];
+      return config ? applyColumnConfig(column, config) : column;
+    });
+    
+    // Filter by column selection if enabled
+    if (advancedOptions.columnSelection && !advancedOptions.showAllColumns) {
+      columns = columns.filter(col => dataState.selectedColumns.includes(col.field));
     }
     
-    return dataState.columns.filter(col => dataState.selectedColumns.includes(col.field));
+    // Filter out hidden columns
+    columns = columns.filter(col => !col.hide);
+    
+    return columns;
+  };
+
+  // Handle column configuration
+  const openColumnConfig = (column) => {
+    setSelectedColumnForConfig(column);
+    setColumnConfigDialog(true);
+  };
+
+  const updateColumnConfig = (columnField, config) => {
+    setColumnConfigs(prev => ({
+      ...prev,
+      [columnField]: {
+        ...prev[columnField],
+        ...config
+      }
+    }));
+  };
+
+  const applyColumnConfig = (column, config) => {
+    return {
+      ...column,
+      headerName: config?.displayName || column.headerName,
+      width: config?.width || column.width,
+      sortable: config?.sortable !== undefined ? config.sortable : column.sortable,
+      editable: config?.editable !== undefined ? config.editable : column.editable,
+      hide: config?.hidden || false,
+      align: config?.alignment || 'left',
+      headerAlign: config?.headerAlignment || 'left',
+      type: config?.dataType || column.type || 'string',
+      renderCell: config?.customRenderer ? undefined : column.renderCell, // Reset custom renderer if needed
+      valueFormatter: config?.formatter ? (params) => {
+        switch (config.formatter) {
+          case 'currency':
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(params.value);
+          case 'percentage':
+            return `${(params.value * 100).toFixed(2)}%`;
+          case 'date':
+            return new Date(params.value).toLocaleDateString();
+          case 'datetime':
+            return new Date(params.value).toLocaleString();
+          default:
+            return params.value;
+        }
+      } : column.valueFormatter
+    };
   };
 
   // Handle column selection changes
@@ -551,6 +645,162 @@ const EnhancedTableComponent = ({
     return await designApi.getAllDesigns();
   };
 
+  // Execute MongoDB query
+  const executeMongoQuery = async (query) => {
+    try {
+      // Parse the query to extract collection and pipeline
+      let parsedQuery;
+      try {
+        parsedQuery = JSON.parse(query);
+      } catch (e) {
+        throw new Error('Invalid JSON format. Please provide a valid MongoDB query.');
+      }
+
+      const { collection, pipeline = [], find = {} } = parsedQuery;
+      
+      if (!collection) {
+        throw new Error('Collection name is required in the query object.');
+      }
+
+      // Determine which type of query to execute
+      let endpoint;
+      let body;
+      
+      if (pipeline && pipeline.length > 0) {
+        // Aggregation pipeline
+        endpoint = `/mongo/collections/${collection}/aggregate`;
+        body = { pipeline };
+      } else {
+        // Simple find query
+        endpoint = `/mongo/collections/${collection}/find`;
+        body = { filter: find };
+      }
+
+      const response = await fetch(`http://localhost:8080/api${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': 'custom-query-user'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(`Query failed: ${errorData.message || response.statusText}`);
+      }
+
+      const result = await response.json();
+      return Array.isArray(result) ? result : result.data || [result];
+    } catch (error) {
+      console.error('MongoDB query execution error:', error);
+      throw error;
+    }
+  };
+
+  // Execute SQL-like query
+  const executeSQLQuery = async (query) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/sql/query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': 'sql-query-user'
+        },
+        body: JSON.stringify({ query })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(`SQL query failed: ${errorData.message || response.statusText}`);
+      }
+
+      const result = await response.json();
+      return Array.isArray(result) ? result : result.data || [result];
+    } catch (error) {
+      console.error('SQL query execution error:', error);
+      throw error;
+    }
+  };
+
+  // Save query to history
+  const saveQueryToHistory = (query, queryType) => {
+    const historyEntry = {
+      id: Date.now(),
+      query,
+      queryType,
+      timestamp: new Date().toISOString(),
+      description: query.substring(0, 100) + (query.length > 100 ? '...' : '')
+    };
+    
+    setQueryHistory(prev => [historyEntry, ...prev.slice(0, 9)]); // Keep last 10 queries
+  };
+
+  // Load query from history
+  const loadQueryFromHistory = (historyEntry) => {
+    setDataState(prev => ({ 
+      ...prev, 
+      query: historyEntry.query, 
+      source: historyEntry.queryType 
+    }));
+    setQueryMode('simple');
+  };
+
+  // Get query placeholder based on source
+  const getQueryPlaceholder = () => {
+    switch (dataState.source) {
+      case 'mongodb_query':
+        return `{
+  "collection": "account_balances",
+  "pipeline": [
+    { "$match": { "balance": { "$gt": 1000 } } },
+    { "$group": { "_id": "$accountType", "totalBalance": { "$sum": "$balance" } } }
+  ]
+}`;
+      case 'sql_query':
+        return `SELECT accountType, SUM(balance) as totalBalance 
+FROM account_balances 
+WHERE balance > 1000 
+GROUP BY accountType
+ORDER BY totalBalance DESC`;
+      case 'custom':
+        return `Enter query: 'public designs', 'recent designs', 'count summary'`;
+      default:
+        return '';
+    }
+  };
+
+  // Insert sample MongoDB query
+  const insertSampleMongoQuery = () => {
+    const sampleQuery = `{
+  "collection": "fund_info",
+  "pipeline": [
+    { "$match": { "status": "active" } },
+    { "$group": { 
+        "_id": "$fundType", 
+        "count": { "$sum": 1 },
+        "totalAssets": { "$sum": "$totalAssets" }
+      }
+    },
+    { "$sort": { "totalAssets": -1 } }
+  ]
+}`;
+    setDataState(prev => ({ ...prev, query: sampleQuery }));
+  };
+
+  // Insert sample SQL query
+  const insertSampleSQLQuery = () => {
+    const sampleQuery = `SELECT 
+  fundType, 
+  COUNT(*) as count, 
+  SUM(totalAssets) as totalAssets
+FROM fund_info 
+WHERE status = 'active'
+GROUP BY fundType
+ORDER BY totalAssets DESC`;
+    setDataState(prev => ({ ...prev, query: sampleQuery }));
+  };
+
   // Save table configuration
   const saveTableConfiguration = async () => {
     try {
@@ -604,9 +854,15 @@ const EnhancedTableComponent = ({
       const reloadedComponent = currentDesign.components.find(comp => comp.id === component.id);
 
       if (reloadedComponent && reloadedComponent.properties.dataConfig) {
-        setDataState(reloadedComponent.properties.dataConfig);
+        setDataState(prev => ({
+          ...prev,
+          ...reloadedComponent.properties.dataConfig
+        }));
         if (reloadedComponent.properties.advancedOptions) {
-          setAdvancedOptions(reloadedComponent.properties.advancedOptions);
+          setAdvancedOptions(prev => ({
+            ...prev,
+            ...reloadedComponent.properties.advancedOptions
+          }));
         }
         
         if (onReload) {
@@ -630,11 +886,11 @@ const EnhancedTableComponent = ({
       const changedField = Object.keys(newRow).find(key => newRow[key] !== oldRow[key]);
       if (!changedField) return oldRow;
 
-      // If we're editing designs or projects data, attempt to save to backend
-      if (dataState.source === 'designs' || dataState.source === 'projects') {
-        const endpoint = dataState.source === 'designs' ? '/api/designs' : '/api/projects';
+      // If we're editing projects data, attempt to save to backend
+      if (dataState.source === 'projects') {
+        const endpoint = '/api/projects';
         
-        const response = await fetch(`${endpoint}/${newRow.id}`, {
+        const response = await fetch(`http://localhost:8080${endpoint}/${newRow.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -647,7 +903,7 @@ const EnhancedTableComponent = ({
           throw new Error(`Failed to update ${changedField}: ${response.statusText}`);
         }
         
-        console.log(`Successfully updated ${changedField} for ${dataState.source} item ${newRow.id}`);
+        console.log(`Successfully updated ${changedField} for project ${newRow.id}`);
       }
 
       // Update local state
@@ -692,15 +948,15 @@ const EnhancedTableComponent = ({
         )
       }));
 
-      // If we're editing designs or projects data, attempt to save to backend
-      if (dataState.source === 'designs' || dataState.source === 'projects') {
-        const endpoint = dataState.source === 'designs' ? '/api/designs' : '/api/projects';
+      // If we're editing projects data, attempt to save to backend
+      if (dataState.source === 'projects') {
+        const endpoint = '/api/projects';
         const rowData = dataState.results.find(row => row.id === id);
         
         if (rowData) {
           const updatedRow = { ...rowData, [field]: value };
           
-          const response = await fetch(`${endpoint}/${id}`, {
+          const response = await fetch(`http://localhost:8080${endpoint}/${id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -713,7 +969,7 @@ const EnhancedTableComponent = ({
             throw new Error(`Failed to update ${field}: ${response.statusText}`);
           }
           
-          console.log(`Successfully updated ${field} for ${dataState.source} item ${id}`);
+          console.log(`Successfully updated ${field} for project ${id}`);
         }
       }
     } catch (error) {
@@ -778,10 +1034,104 @@ const EnhancedTableComponent = ({
           </Box>
         </Grid>
 
-        {dataState.source === 'custom' && (
+        {(dataState.source === 'custom' || dataState.source === 'mongodb_query' || dataState.source === 'sql_query') && (
           <Grid item xs={12}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="subtitle2">
+                {dataState.source === 'mongodb_query' && 'MongoDB Query'}
+                {dataState.source === 'sql_query' && 'SQL-like Query'}
+                {dataState.source === 'custom' && 'Custom Query'}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setCustomQueryDialog(true)}
+                >
+                  Query Builder
+                </Button>
+                {queryHistory.length > 0 && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => setCustomQueryDialog(true)}
+                  >
+                    History ({queryHistory.length})
+                  </Button>
+                )}
+              </Box>
+            </Box>
+            
             <TextField
-              label="Custom Query"
+              label={
+                dataState.source === 'mongodb_query' 
+                  ? 'MongoDB Query (JSON format)'
+                  : dataState.source === 'sql_query'
+                  ? 'SQL Query'
+                  : 'Custom Query'
+              }
+              multiline
+              rows={6}
+              fullWidth
+              value={dataState.query}
+              onChange={(e) => setDataState(prev => ({ ...prev, query: e.target.value }))}
+              placeholder={getQueryPlaceholder()}
+              size="small"
+              sx={{
+                '& .MuiInputBase-input': {
+                  fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                  fontSize: '0.875rem'
+                }
+              }}
+            />
+            
+            <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Button
+                size="small"
+                variant="contained"
+                onClick={() => {
+                  executeQuery();
+                  saveQueryToHistory(dataState.query, dataState.source);
+                }}
+                disabled={!dataState.query.trim() || dataState.loading}
+              >
+                Execute Query
+              </Button>
+              <Button
+                size="small"
+                onClick={() => setDataState(prev => ({ ...prev, query: '' }))}
+              >
+                Clear
+              </Button>
+              {dataState.source === 'mongodb_query' && (
+                <Button
+                  size="small"
+                  onClick={() => insertSampleMongoQuery()}
+                >
+                  Sample Query
+                </Button>
+              )}
+              {dataState.source === 'sql_query' && (
+                <Button
+                  size="small"
+                  onClick={() => insertSampleSQLQuery()}
+                >
+                  Sample Query
+                </Button>
+              )}
+            </Box>
+          </Grid>
+        )}
+
+        {dataState.source === 'custom' && queryMode === 'simple' && (
+          <Grid item xs={12}>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              <Typography variant="body2">
+                <strong>Simple Query Mode:</strong> Use predefined query patterns like "public designs", "recent designs", or "count summary"
+              </Typography>
+            </Alert>
+            <TextField
+              label="Simple Query"
               multiline
               rows={3}
               fullWidth
@@ -808,14 +1158,14 @@ const EnhancedTableComponent = ({
 
   // Render data preview tab
   const renderDataPreview = () => (
-    <Box sx={{ p: 2, height: 400 }}>
+    <Box sx={{ p: isEditMode ? 2 : 0, height: isEditMode ? 400 : 'auto' }}>
       {dataState.error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {dataState.error}
         </Alert>
       )}
       
-      {dataState.results.length > 0 && (
+      {isEditMode && dataState.results.length > 0 && (
         <Alert severity="info" sx={{ mb: 2 }}>
           💡 <strong>Editing Enabled:</strong> Double-click cells in Name, Description, Label, Placeholder, Title, and Text columns to edit values. Changes are automatically saved to the backend.
         </Alert>
@@ -823,8 +1173,8 @@ const EnhancedTableComponent = ({
       
       {dataState.results.length > 0 ? (
         <Box>
-          {/* Column Selection Controls */}
-          {advancedOptions.columnSelection && dataState.availableColumns.length > 0 && (
+          {/* Column Selection Controls - Only show in edit mode */}
+          {isEditMode && advancedOptions.columnSelection && dataState.availableColumns.length > 0 && (
             <Box sx={{ mb: 2, p: 2, bgcolor: 'rgba(43, 156, 174, 0.05)', borderRadius: 1, border: '1px solid rgba(43, 156, 174, 0.15)' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -861,16 +1211,8 @@ const EnhancedTableComponent = ({
               </Box>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                 {dataState.availableColumns.map((column) => (
-                  <FormControlLabel
+                  <Box
                     key={column.field}
-                    control={
-                      <Checkbox
-                        checked={dataState.selectedColumns.includes(column.field)}
-                        onChange={(e) => handleColumnSelection(column.field, e.target.checked)}
-                        size="small"
-                      />
-                    }
-                    label={column.headerName}
                     sx={{ 
                       bgcolor: dataState.selectedColumns.includes(column.field) ? 'rgba(43, 156, 174, 0.12)' : 'white',
                       px: 1,
@@ -878,12 +1220,37 @@ const EnhancedTableComponent = ({
                       borderRadius: 1,
                       border: '1px solid',
                       borderColor: dataState.selectedColumns.includes(column.field) ? 'rgba(43, 156, 174, 0.4)' : 'rgba(203, 213, 224, 0.6)',
-                      m: 0,
-                      '& .MuiTypography-root': {
-                        fontSize: '0.75rem'
-                      }
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5
                     }}
-                  />
+                  >
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={dataState.selectedColumns.includes(column.field)}
+                          onChange={(e) => handleColumnSelection(column.field, e.target.checked)}
+                          size="small"
+                        />
+                      }
+                      label={columnConfigs[column.field]?.displayName || column.headerName}
+                      sx={{ 
+                        m: 0,
+                        '& .MuiTypography-root': {
+                          fontSize: '0.75rem'
+                        }
+                      }}
+                    />
+                    <Tooltip title="Configure Column">
+                      <IconButton 
+                        size="small"
+                        onClick={() => openColumnConfig(column)}
+                        sx={{ p: 0.25 }}
+                      >
+                        <Settings fontSize="inherit" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 ))}
               </Box>
             </Box>
@@ -928,18 +1295,18 @@ const EnhancedTableComponent = ({
             // Last resort: index-based ID
             return `row_${safeIndex}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
           }}
-          checkboxSelection={advancedOptions.rowSelection === 'multiple'}
-          disableSelectionOnClick
+          checkboxSelection={isEditMode && advancedOptions.rowSelection === 'multiple'}
+          disableSelectionOnClick={!isEditMode}
           sortingOrder={['desc', 'asc']}
           pagination
           pageSizeOptions={[5, 10, 25, 50]}
           onPageSizeChange={(newPageSize) => 
             setDataState(prev => ({ ...prev, pageSize: newPageSize }))
           }
-          processRowUpdate={processRowUpdate}
-          onProcessRowUpdateError={handleProcessRowUpdateError}
-          onCellEditCommit={handleCellEditCommit}
-          experimentalFeatures={{ newEditingApi: true }}
+          processRowUpdate={isEditMode ? processRowUpdate : undefined}
+          onProcessRowUpdateError={isEditMode ? handleProcessRowUpdateError : undefined}
+          onCellEditCommit={isEditMode ? handleCellEditCommit : undefined}
+          experimentalFeatures={{ newEditingApi: isEditMode }}
         />
       </Box>
       ) : (
@@ -959,6 +1326,118 @@ const EnhancedTableComponent = ({
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Configure a data source and execute a query to see results
+          </Typography>
+        </Box>
+      )}
+    </Box>
+  );
+
+  // Render column configuration tab
+  const renderColumnConfig = () => (
+    <Box sx={{ p: 2 }}>
+      <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <ViewColumn />
+        Column Configuration
+      </Typography>
+      
+      {dataState.availableColumns.length > 0 ? (
+        <Grid container spacing={2}>
+          {dataState.availableColumns.map((column) => {
+            const config = columnConfigs[column.field] || {};
+            const isConfigured = Object.keys(config).length > 0;
+            
+            return (
+              <Grid item xs={12} md={6} lg={4} key={column.field}>
+                <Card 
+                  variant="outlined" 
+                  sx={{ 
+                    position: 'relative',
+                    border: isConfigured ? '2px solid rgba(43, 156, 174, 0.3)' : '1px solid rgba(203, 213, 224, 0.6)',
+                    bgcolor: isConfigured ? 'rgba(43, 156, 174, 0.05)' : 'white'
+                  }}
+                >
+                  <CardContent sx={{ pb: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                        {config.displayName || column.headerName}
+                      </Typography>
+                      {isConfigured && (
+                        <Chip label="Configured" size="small" color="primary" />
+                      )}
+                    </Box>
+                    
+                    <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                      Field: {column.field}
+                    </Typography>
+                    
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="caption">
+                        Type: {config.dataType || column.type || 'string'} | 
+                        Width: {config.width || column.width || 150}px
+                        {config.formatter && ` | Format: ${config.formatter}`}
+                      </Typography>
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+                      {(config.sortable !== undefined ? config.sortable : column.sortable) && (
+                        <Chip label="Sortable" size="small" variant="outlined" />
+                      )}
+                      {(config.editable !== undefined ? config.editable : column.editable) && (
+                        <Chip label="Editable" size="small" variant="outlined" />
+                      )}
+                      {config.hidden && (
+                        <Chip label="Hidden" size="small" color="warning" variant="outlined" />
+                      )}
+                    </Box>
+                  </CardContent>
+                  
+                  <CardActions sx={{ pt: 0, justifyContent: 'space-between' }}>
+                    <Button
+                      size="small"
+                      startIcon={<Settings />}
+                      onClick={() => openColumnConfig(column)}
+                    >
+                      Configure
+                    </Button>
+                    
+                    {isConfigured && (
+                      <Button
+                        size="small"
+                        color="warning"
+                        onClick={() => {
+                          setColumnConfigs(prev => {
+                            const newConfigs = { ...prev };
+                            delete newConfigs[column.field];
+                            return newConfigs;
+                          });
+                        }}
+                      >
+                        Reset
+                      </Button>
+                    )}
+                  </CardActions>
+                </Card>
+              </Grid>
+            );
+          })}
+        </Grid>
+      ) : (
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          height: 200,
+          bgcolor: 'rgba(43, 156, 174, 0.03)',
+          borderRadius: 1,
+          border: '1px solid rgba(43, 156, 174, 0.1)'
+        }}>
+          <ViewColumn sx={{ fontSize: 48, color: 'rgba(43, 156, 174, 0.4)', mb: 2 }} />
+          <Typography variant="h6" color="text.secondary">
+            No Columns Available
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Execute a query first to see column configuration options
           </Typography>
         </Box>
       )}
@@ -1061,53 +1540,864 @@ const EnhancedTableComponent = ({
   return (
     <Card>
       <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TableChart color="primary" />
-            Enhanced Table Component
-          </Typography>
-          
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Tooltip title="Save Configuration">
-              <IconButton onClick={() => setSaveDialog(true)} size="small">
-                <Save />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Reload Configuration">
-              <IconButton onClick={reloadTableConfiguration} size="small">
-                <Refresh />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
+        {isEditMode && (
+          <>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TableChart color="primary" />
+                Enhanced Table Component
+              </Typography>
+              
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Tooltip title="Save Configuration">
+                  <IconButton onClick={() => setSaveDialog(true)} size="small">
+                    <Save />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Reload Configuration">
+                  <IconButton onClick={reloadTableConfiguration} size="small">
+                    <Refresh />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
 
-        <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-          <Tab icon={<Settings />} label="Data Config" />
-          <Tab icon={<Visibility />} label="Preview" />
-          <Tab icon={<Code />} label="Advanced" />
-        </Tabs>
+            <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+              <Tab icon={<Settings />} label="Data Config" />
+              <Tab icon={<Visibility />} label="Preview" />
+              <Tab icon={<ViewColumn />} label="Columns" />
+              <Tab icon={<Code />} label="Advanced" />
+            </Tabs>
 
-        {activeTab === 0 && renderDataConfig()}
-        {activeTab === 1 && renderDataPreview()}
-        {activeTab === 2 && renderAdvancedOptions()}
+            {activeTab === 0 && renderDataConfig()}
+            {activeTab === 1 && renderDataPreview()}
+            {activeTab === 2 && renderColumnConfig()}
+            {activeTab === 3 && renderAdvancedOptions()}
+          </>
+        )}
+        
+        {!isEditMode && renderDataPreview()}
       </CardContent>
 
-      {/* Save Configuration Dialog */}
-      <Dialog open={saveDialog} onClose={() => setSaveDialog(false)}>
-        <DialogTitle>Save Table Configuration</DialogTitle>
+      {/* Configuration Dialogs - Only show in edit mode */}
+      {isEditMode && (
+        <>
+          {/* Save Configuration Dialog */}
+          <Dialog open={saveDialog} onClose={() => setSaveDialog(false)}>
+            <DialogTitle>Save Table Configuration</DialogTitle>
+            <DialogContent>
+              <Typography variant="body2" color="text.secondary">
+                This will save the current table configuration including data source, 
+                query settings, and advanced options to the design.
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setSaveDialog(false)}>Cancel</Button>
+              <Button onClick={saveTableConfiguration} variant="contained">
+                Save Configuration
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+      {/* Column Configuration Dialog */}
+      <Dialog 
+        open={columnConfigDialog} 
+        onClose={() => setColumnConfigDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Configure Column: {selectedColumnForConfig?.headerName}
+        </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            This will save the current table configuration including data source, 
-            query settings, and advanced options to the design.
-          </Typography>
+          <Box sx={{ pt: 2 }}>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Display Name"
+                  fullWidth
+                  value={columnConfigs[selectedColumnForConfig?.field]?.displayName || selectedColumnForConfig?.headerName || ''}
+                  onChange={(e) => updateColumnConfig(selectedColumnForConfig?.field, { displayName: e.target.value })}
+                  size="small"
+                />
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Width (px)"
+                  type="number"
+                  fullWidth
+                  value={columnConfigs[selectedColumnForConfig?.field]?.width || selectedColumnForConfig?.width || 150}
+                  onChange={(e) => updateColumnConfig(selectedColumnForConfig?.field, { width: parseInt(e.target.value) })}
+                  size="small"
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Data Type</InputLabel>
+                  <Select
+                    value={columnConfigs[selectedColumnForConfig?.field]?.dataType || selectedColumnForConfig?.type || 'string'}
+                    label="Data Type"
+                    onChange={(e) => updateColumnConfig(selectedColumnForConfig?.field, { dataType: e.target.value })}
+                  >
+                    <MenuItem value="string">Text</MenuItem>
+                    <MenuItem value="number">Number</MenuItem>
+                    <MenuItem value="boolean">Boolean</MenuItem>
+                    <MenuItem value="date">Date</MenuItem>
+                    <MenuItem value="dateTime">Date Time</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Formatter</InputLabel>
+                  <Select
+                    value={columnConfigs[selectedColumnForConfig?.field]?.formatter || 'none'}
+                    label="Formatter"
+                    onChange={(e) => updateColumnConfig(selectedColumnForConfig?.field, { formatter: e.target.value === 'none' ? null : e.target.value })}
+                  >
+                    <MenuItem value="none">None</MenuItem>
+                    <MenuItem value="currency">Currency</MenuItem>
+                    <MenuItem value="percentage">Percentage</MenuItem>
+                    <MenuItem value="date">Date</MenuItem>
+                    <MenuItem value="datetime">Date & Time</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Alignment</InputLabel>
+                  <Select
+                    value={columnConfigs[selectedColumnForConfig?.field]?.alignment || 'left'}
+                    label="Alignment"
+                    onChange={(e) => updateColumnConfig(selectedColumnForConfig?.field, { alignment: e.target.value })}
+                  >
+                    <MenuItem value="left">Left</MenuItem>
+                    <MenuItem value="center">Center</MenuItem>
+                    <MenuItem value="right">Right</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Header Alignment</InputLabel>
+                  <Select
+                    value={columnConfigs[selectedColumnForConfig?.field]?.headerAlignment || 'left'}
+                    label="Header Alignment"
+                    onChange={(e) => updateColumnConfig(selectedColumnForConfig?.field, { headerAlignment: e.target.value })}
+                  >
+                    <MenuItem value="left">Left</MenuItem>
+                    <MenuItem value="center">Center</MenuItem>
+                    <MenuItem value="right">Right</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={columnConfigs[selectedColumnForConfig?.field]?.sortable !== undefined 
+                          ? columnConfigs[selectedColumnForConfig?.field]?.sortable 
+                          : selectedColumnForConfig?.sortable || false}
+                        onChange={(e) => updateColumnConfig(selectedColumnForConfig?.field, { sortable: e.target.checked })}
+                      />
+                    }
+                    label="Sortable"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={columnConfigs[selectedColumnForConfig?.field]?.editable !== undefined 
+                          ? columnConfigs[selectedColumnForConfig?.field]?.editable 
+                          : selectedColumnForConfig?.editable || false}
+                        onChange={(e) => updateColumnConfig(selectedColumnForConfig?.field, { editable: e.target.checked })}
+                      />
+                    }
+                    label="Editable"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={columnConfigs[selectedColumnForConfig?.field]?.hidden || false}
+                        onChange={(e) => updateColumnConfig(selectedColumnForConfig?.field, { hidden: e.target.checked })}
+                      />
+                    }
+                    label="Hidden"
+                  />
+                </Box>
+              </Grid>
+            </Grid>
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setSaveDialog(false)}>Cancel</Button>
-          <Button onClick={saveTableConfiguration} variant="contained">
-            Save Configuration
+          <Button onClick={() => setColumnConfigDialog(false)}>Close</Button>
+          <Button 
+            onClick={() => {
+              // Reset column configuration
+              setColumnConfigs(prev => {
+                const newConfigs = { ...prev };
+                delete newConfigs[selectedColumnForConfig?.field];
+                return newConfigs;
+              });
+            }}
+            color="warning"
+          >
+            Reset
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Custom Query Builder Dialog */}
+      <Dialog 
+        open={customQueryDialog} 
+        onClose={() => setCustomQueryDialog(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Query Builder & History</Typography>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Query Type</InputLabel>
+              <Select
+                value={dataState.source}
+                label="Query Type"
+                onChange={(e) => setDataState(prev => ({ ...prev, source: e.target.value, query: '' }))}
+              >
+                <MenuItem value="custom">Simple Custom</MenuItem>
+                <MenuItem value="mongodb_query">MongoDB Query</MenuItem>
+                <MenuItem value="sql_query">SQL-like Query</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Tabs value={queryMode} onChange={(e, newValue) => setQueryMode(newValue)}>
+              <Tab value="simple" label="Query Editor" />
+              <Tab value="advanced" label="Query History" />
+              <Tab value="templates" label="Templates" />
+            </Tabs>
+
+            {queryMode === 'simple' && (
+              <Box sx={{ mt: 3 }}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12}>
+                    <TextField
+                      label={`${dataState.source === 'mongodb_query' ? 'MongoDB' : dataState.source === 'sql_query' ? 'SQL' : 'Custom'} Query`}
+                      multiline
+                      rows={12}
+                      fullWidth
+                      value={dataState.query}
+                      onChange={(e) => setDataState(prev => ({ ...prev, query: e.target.value }))}
+                      placeholder={getQueryPlaceholder()}
+                      sx={{
+                        '& .MuiInputBase-input': {
+                          fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                          fontSize: '0.875rem'
+                        }
+                      }}
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12}>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      {dataState.source === 'mongodb_query' && (
+                        <>
+                          <Button size="small" onClick={() => insertSampleMongoQuery()}>
+                            Sample Aggregation
+                          </Button>
+                          <Button 
+                            size="small" 
+                            onClick={() => setDataState(prev => ({ 
+                              ...prev, 
+                              query: `{ "collection": "fund_info", "find": { "status": "active" } }` 
+                            }))}
+                          >
+                            Simple Find
+                          </Button>
+                        </>
+                      )}
+                      {dataState.source === 'sql_query' && (
+                        <>
+                          <Button size="small" onClick={() => insertSampleSQLQuery()}>
+                            Sample SELECT
+                          </Button>
+                          <Button 
+                            size="small" 
+                            onClick={() => setDataState(prev => ({ 
+                              ...prev, 
+                              query: `SELECT * FROM fund_info LIMIT 10` 
+                            }))}
+                          >
+                            Simple SELECT
+                          </Button>
+                        </>
+                      )}
+                      <Button 
+                        size="small" 
+                        color="warning"
+                        onClick={() => setDataState(prev => ({ ...prev, query: '' }))}
+                      >
+                        Clear
+                      </Button>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+
+            {queryMode === 'advanced' && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Query History</Typography>
+                {queryHistory.length > 0 ? (
+                  <Grid container spacing={2}>
+                    {queryHistory.map((historyItem) => (
+                      <Grid item xs={12} key={historyItem.id}>
+                        <Card variant="outlined">
+                          <CardContent sx={{ pb: 1 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+                              <Typography variant="subtitle2">
+                                {historyItem.queryType.replace('_', ' ').toUpperCase()}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(historyItem.timestamp).toLocaleString()}
+                              </Typography>
+                            </Box>
+                            <Typography 
+                              variant="body2" 
+                              sx={{ 
+                                fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                                bgcolor: 'rgba(0,0,0,0.05)',
+                                p: 1,
+                                borderRadius: 1,
+                                mb: 1,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}
+                            >
+                              {historyItem.description}
+                            </Typography>
+                          </CardContent>
+                          <CardActions sx={{ pt: 0 }}>
+                            <Button
+                              size="small"
+                              onClick={() => loadQueryFromHistory(historyItem)}
+                            >
+                              Load Query
+                            </Button>
+                            <Button
+                              size="small"
+                              color="warning"
+                              onClick={() => setQueryHistory(prev => prev.filter(item => item.id !== historyItem.id))}
+                            >
+                              Delete
+                            </Button>
+                          </CardActions>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                ) : (
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <Typography color="text.secondary">No query history available</Typography>
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            {queryMode === 'templates' && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Query Templates</Typography>
+                <Grid container spacing={2}>
+                  {/* MongoDB Templates */}
+                  <Grid item xs={12} md={6}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="subtitle1" sx={{ mb: 2 }}>MongoDB Templates</Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setDataState(prev => ({ 
+                                ...prev, 
+                                source: 'mongodb_query',
+                                query: `{
+  "collection": "fund_info",
+  "pipeline": [
+    { "$group": { "_id": "$status", "count": { "$sum": 1 } } }
+  ]
+}`
+                              }));
+                            }}
+                          >
+                            Group By Status
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setDataState(prev => ({ 
+                                ...prev, 
+                                source: 'mongodb_query',
+                                query: `{
+  "collection": "account_balances",
+  "pipeline": [
+    { "$match": { "balance": { "$gte": 1000 } } },
+    { "$sort": { "balance": -1 } },
+    { "$limit": 10 }
+  ]
+}`
+                              }));
+                            }}
+                          >
+                            Top 10 Balances
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setDataState(prev => ({ 
+                                ...prev, 
+                                source: 'mongodb_query',
+                                query: `{
+  "collection": "nav_history",
+  "pipeline": [
+    { "$match": { "date": { "$gte": "2024-01-01" } } },
+    { "$group": { 
+        "_id": { 
+          "$dateToString": { "format": "%Y-%m", "date": "$date" }
+        },
+        "avgNav": { "$avg": "$nav" }
+      }
+    }
+  ]
+}`
+                              }));
+                            }}
+                          >
+                            Monthly Average NAV
+                          </Button>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  {/* SQL Templates */}
+                  <Grid item xs={12} md={6}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="subtitle1" sx={{ mb: 2 }}>SQL Templates</Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setDataState(prev => ({ 
+                                ...prev, 
+                                source: 'sql_query',
+                                query: `SELECT status, COUNT(*) as count
+FROM fund_info
+GROUP BY status
+ORDER BY count DESC`
+                              }));
+                            }}
+                          >
+                            Count by Status
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setDataState(prev => ({ 
+                                ...prev, 
+                                source: 'sql_query',
+                                query: `SELECT *
+FROM account_balances
+WHERE balance >= 1000
+ORDER BY balance DESC
+LIMIT 10`
+                              }));
+                            }}
+                          >
+                            Top 10 Balances
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setDataState(prev => ({ 
+                                ...prev, 
+                                source: 'sql_query',
+                                query: `SELECT 
+  DATE_FORMAT(date, '%Y-%m') as month,
+  AVG(nav) as avgNav
+FROM nav_history
+WHERE date >= '2024-01-01'
+GROUP BY month
+ORDER BY month`
+                              }));
+                            }}
+                          >
+                            Monthly Average NAV
+                          </Button>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCustomQueryDialog(false)}>Close</Button>
+          <Button 
+            variant="contained"
+            onClick={() => {
+              if (dataState.query.trim()) {
+                executeQuery();
+                saveQueryToHistory(dataState.query, dataState.source);
+                setCustomQueryDialog(false);
+              }
+            }}
+            disabled={!dataState.query.trim() || dataState.loading}
+          >
+            Execute Query
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Custom Query Builder Dialog */}
+      <Dialog 
+        open={customQueryDialog} 
+        onClose={() => setCustomQueryDialog(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Query Builder & History</Typography>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Query Type</InputLabel>
+              <Select
+                value={dataState.source}
+                label="Query Type"
+                onChange={(e) => setDataState(prev => ({ ...prev, source: e.target.value, query: '' }))}
+              >
+                <MenuItem value="custom">Simple Custom</MenuItem>
+                <MenuItem value="mongodb_query">MongoDB Query</MenuItem>
+                <MenuItem value="sql_query">SQL-like Query</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Tabs value={queryMode} onChange={(e, newValue) => setQueryMode(newValue)}>
+              <Tab value="simple" label="Query Editor" />
+              <Tab value="advanced" label="Query History" />
+              <Tab value="templates" label="Templates" />
+            </Tabs>
+
+            {queryMode === 'simple' && (
+              <Box sx={{ mt: 3 }}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12}>
+                    <TextField
+                      label={`${dataState.source === 'mongodb_query' ? 'MongoDB' : dataState.source === 'sql_query' ? 'SQL' : 'Custom'} Query`}
+                      multiline
+                      rows={12}
+                      fullWidth
+                      value={dataState.query}
+                      onChange={(e) => setDataState(prev => ({ ...prev, query: e.target.value }))}
+                      placeholder={getQueryPlaceholder()}
+                      sx={{
+                        '& .MuiInputBase-input': {
+                          fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                          fontSize: '0.875rem'
+                        }
+                      }}
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12}>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      {dataState.source === 'mongodb_query' && (
+                        <>
+                          <Button size="small" onClick={() => insertSampleMongoQuery()}>
+                            Sample Aggregation
+                          </Button>
+                          <Button 
+                            size="small" 
+                            onClick={() => setDataState(prev => ({ 
+                              ...prev, 
+                              query: `{ "collection": "fund_info", "find": { "status": "active" } }` 
+                            }))}
+                          >
+                            Simple Find
+                          </Button>
+                        </>
+                      )}
+                      {dataState.source === 'sql_query' && (
+                        <>
+                          <Button size="small" onClick={() => insertSampleSQLQuery()}>
+                            Sample SELECT
+                          </Button>
+                          <Button 
+                            size="small" 
+                            onClick={() => setDataState(prev => ({ 
+                              ...prev, 
+                              query: `SELECT * FROM fund_info LIMIT 10` 
+                            }))}
+                          >
+                            Simple SELECT
+                          </Button>
+                        </>
+                      )}
+                      <Button 
+                        size="small" 
+                        color="warning"
+                        onClick={() => setDataState(prev => ({ ...prev, query: '' }))}
+                      >
+                        Clear
+                      </Button>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+
+            {queryMode === 'advanced' && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Query History</Typography>
+                {queryHistory.length > 0 ? (
+                  <Grid container spacing={2}>
+                    {queryHistory.map((historyItem) => (
+                      <Grid item xs={12} key={historyItem.id}>
+                        <Card variant="outlined">
+                          <CardContent sx={{ pb: 1 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+                              <Typography variant="subtitle2">
+                                {historyItem.queryType.replace('_', ' ').toUpperCase()}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(historyItem.timestamp).toLocaleString()}
+                              </Typography>
+                            </Box>
+                            <Typography 
+                              variant="body2" 
+                              sx={{ 
+                                fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                                bgcolor: 'rgba(0,0,0,0.05)',
+                                p: 1,
+                                borderRadius: 1,
+                                mb: 1,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}
+                            >
+                              {historyItem.description}
+                            </Typography>
+                          </CardContent>
+                          <CardActions sx={{ pt: 0 }}>
+                            <Button
+                              size="small"
+                              onClick={() => loadQueryFromHistory(historyItem)}
+                            >
+                              Load Query
+                            </Button>
+                            <Button
+                              size="small"
+                              color="warning"
+                              onClick={() => setQueryHistory(prev => prev.filter(item => item.id !== historyItem.id))}
+                            >
+                              Delete
+                            </Button>
+                          </CardActions>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                ) : (
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <Typography color="text.secondary">No query history available</Typography>
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            {queryMode === 'templates' && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Query Templates</Typography>
+                <Grid container spacing={2}>
+                  {/* MongoDB Templates */}
+                  <Grid item xs={12} md={6}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="subtitle1" sx={{ mb: 2 }}>MongoDB Templates</Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setDataState(prev => ({ 
+                                ...prev, 
+                                source: 'mongodb_query',
+                                query: `{
+  "collection": "fund_info",
+  "pipeline": [
+    { "$group": { "_id": "$status", "count": { "$sum": 1 } } }
+  ]
+}`
+                              }));
+                            }}
+                          >
+                            Group By Status
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setDataState(prev => ({ 
+                                ...prev, 
+                                source: 'mongodb_query',
+                                query: `{
+  "collection": "account_balances",
+  "pipeline": [
+    { "$match": { "balance": { "$gte": 1000 } } },
+    { "$sort": { "balance": -1 } },
+    { "$limit": 10 }
+  ]
+}`
+                              }));
+                            }}
+                          >
+                            Top 10 Balances
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setDataState(prev => ({ 
+                                ...prev, 
+                                source: 'mongodb_query',
+                                query: `{
+  "collection": "nav_history",
+  "pipeline": [
+    { "$match": { "date": { "$gte": "2024-01-01" } } },
+    { "$group": { 
+        "_id": { 
+          "$dateToString": { "format": "%Y-%m", "date": "$date" }
+        },
+        "avgNav": { "$avg": "$nav" }
+      }
+    }
+  ]
+}`
+                              }));
+                            }}
+                          >
+                            Monthly Average NAV
+                          </Button>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  {/* SQL Templates */}
+                  <Grid item xs={12} md={6}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="subtitle1" sx={{ mb: 2 }}>SQL Templates</Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setDataState(prev => ({ 
+                                ...prev, 
+                                source: 'sql_query',
+                                query: `SELECT status, COUNT(*) as count
+FROM fund_info
+GROUP BY status
+ORDER BY count DESC`
+                              }));
+                            }}
+                          >
+                            Count by Status
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setDataState(prev => ({ 
+                                ...prev, 
+                                source: 'sql_query',
+                                query: `SELECT *
+FROM account_balances
+WHERE balance >= 1000
+ORDER BY balance DESC
+LIMIT 10`
+                              }));
+                            }}
+                          >
+                            Top 10 Balances
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setDataState(prev => ({ 
+                                ...prev, 
+                                source: 'sql_query',
+                                query: `SELECT 
+  DATE_FORMAT(date, '%Y-%m') as month,
+  AVG(nav) as avgNav
+FROM nav_history
+WHERE date >= '2024-01-01'
+GROUP BY month
+ORDER BY month`
+                              }));
+                            }}
+                          >
+                            Monthly Average NAV
+                          </Button>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCustomQueryDialog(false)}>Close</Button>
+          <Button 
+            variant="contained"
+            onClick={() => {
+              if (dataState.query.trim()) {
+                executeQuery();
+                saveQueryToHistory(dataState.query, dataState.source);
+                setCustomQueryDialog(false);
+              }
+            }}
+            disabled={!dataState.query.trim() || dataState.loading}
+          >
+            Execute Query
+          </Button>
+        </DialogActions>
+      </Dialog>
+        </>
+      )}
     </Card>
   );
 };

@@ -21,7 +21,17 @@ class DesignApiService {
       const response = await fetch(url, config);
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        let errorData;
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+          errorData = await response.json().catch(() => ({ message: 'Failed to parse JSON error response' }));
+        } else {
+          // Handle text/plain or other content types
+          const textError = await response.text().catch(() => 'Unknown error');
+          errorData = { message: textError };
+        }
+        
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
@@ -30,7 +40,13 @@ class DesignApiService {
         return null;
       }
 
-      return await response.json();
+      // Parse response based on content type
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+      } else {
+        throw new Error(`Content-Type '${contentType}' is not supported`);
+      }
     } catch (error) {
       console.error(`API Error for ${endpoint}:`, error);
       throw error;
@@ -39,10 +55,33 @@ class DesignApiService {
 
   // Design CRUD Operations
   async createDesign(designData, createdBy = 'user') {
+    // Validate and sanitize the design data before sending
+    const sanitizedData = {
+      name: designData.name || 'Untitled Design',
+      description: designData.description || '',
+      components: Array.isArray(designData.components) ? designData.components : [],
+      canvasConfig: designData.canvasConfig || {
+        width: 1200,
+        height: 900,
+        zoomLevel: 100,
+        showGrid: true,
+      },
+      status: designData.status || 'DRAFT',
+    };
+    
+    // Test JSON serialization
+    try {
+      JSON.stringify(sanitizedData);
+    } catch (error) {
+      console.error('Failed to serialize design data:', error);
+      throw new Error('Invalid design data structure');
+    }
+    
     return await this.request('/designs', {
       method: 'POST',
-      body: JSON.stringify(designData),
+      body: JSON.stringify(sanitizedData),
       headers: {
+        'Content-Type': 'application/json',
         'X-User-ID': createdBy
       }
     });
@@ -73,10 +112,33 @@ class DesignApiService {
   }
 
   async updateDesign(id, designData, updatedBy = 'user') {
+    // Apply the same transformation as createDesign
+    const sanitizedData = {
+      name: designData.name || 'Untitled Design',
+      description: designData.description || '',
+      components: Array.isArray(designData.components) ? designData.components : [],
+      canvasConfig: designData.canvasConfig || {
+        width: 1200,
+        height: 900,
+        zoomLevel: 100,
+        showGrid: true,
+      },
+      status: designData.status || 'DRAFT',
+    };
+    
+    // Test JSON serialization
+    try {
+      JSON.stringify(sanitizedData);
+    } catch (error) {
+      console.error('Failed to serialize design data:', error);
+      throw new Error('Invalid design data structure');
+    }
+    
     return await this.request(`/designs/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(designData),
+      body: JSON.stringify(sanitizedData),
       headers: {
+        'Content-Type': 'application/json',
         'X-User-ID': updatedBy
       }
     });
@@ -87,6 +149,7 @@ class DesignApiService {
       method: 'PATCH',
       body: JSON.stringify(partialData),
       headers: {
+        'Content-Type': 'application/json',
         'X-User-ID': updatedBy
       }
     });
@@ -130,6 +193,20 @@ class DesignApiService {
 
   async getPublicDesigns() {
     return await this.request('/designs/public');
+  }
+
+  async publishDesign(id, isPublic = false) {
+    return await this.patchDesign(id, { 
+      status: 'PUBLISHED',
+      isPublic 
+    });
+  }
+
+  async unpublishDesign(id) {
+    return await this.patchDesign(id, { 
+      status: 'DRAFT',
+      isPublic: false 
+    });
   }
 
   async getDesignsByTag(tag) {

@@ -43,7 +43,8 @@ import {
   Fab,
   Backdrop,
   CircularProgress,
-  AppBar
+  AppBar,
+  Checkbox
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { DndProvider } from 'react-dnd';
@@ -563,6 +564,7 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect, isPr
         );
 
       case 'dropdown':
+        const options = Array.isArray(properties.options) ? properties.options : [];
         return (
           <FormControl fullWidth sx={commonStyles}>
             <InputLabel>{properties.label}</InputLabel>
@@ -572,9 +574,12 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect, isPr
               disabled={locked}
               onChange={(e) => onUpdate({ properties: { ...properties, value: e.target.value } })}
             >
-              {(properties.options || []).map((option, index) => (
-                <MenuItem key={index} value={option.value}>
-                  {option.label}
+              {options.map((option, index) => (
+                <MenuItem 
+                  key={option.value || index} 
+                  value={option.value || ''}
+                >
+                  {option.label || option.value || `Option ${index + 1}`}
                 </MenuItem>
               ))}
             </Select>
@@ -585,7 +590,7 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect, isPr
         return (
           <FormControlLabel
             control={
-              <CheckBox
+              <Checkbox
                 checked={properties.checked || false}
                 disabled={locked}
                 onChange={(e) => onUpdate({ properties: { ...properties, checked: e.target.checked } })}
@@ -799,6 +804,7 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect, isPr
             component={element}
             onComponentUpdate={onUpdate}
             styles={commonStyles}
+            isEditMode={!isPreviewMode}
           />
         );
 
@@ -1009,6 +1015,7 @@ const CanvasEditor = () => {
     elements,
     selectedElementId,
     canvasSettings,
+    project,
     addElement,
     updateElement,
     removeElement,
@@ -1020,6 +1027,9 @@ const CanvasEditor = () => {
     clearCanvas,
     canUndo,
     canRedo,
+    saveProject,
+    loadProject,
+    newProject,
   } = useCanvasStore();
 
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
@@ -1048,6 +1058,34 @@ const CanvasEditor = () => {
   });
 
   const canvasRef = useRef(null);
+
+  // Project management effect
+  useEffect(() => {
+    const initializeProject = async () => {
+      if (projectId) {
+        // Load existing project
+        const loaded = await loadProject(projectId);
+        if (loaded && project) {
+          setProjectName(project.name || `Project ${projectId}`);
+          setProjectDescription(project.description || '');
+        }
+      } else {
+        // Create new project
+        newProject();
+        setProjectName('Untitled Design');
+        setProjectDescription('');
+      }
+    };
+
+    initializeProject();
+  }, [projectId, loadProject, newProject]);
+
+  // Update project name from store
+  useEffect(() => {
+    if (project && project.name) {
+      setProjectName(project.name);
+    }
+  }, [project]);
 
   // Generate unique ID for new elements
   const generateId = useCallback(() => {
@@ -1105,34 +1143,21 @@ const CanvasEditor = () => {
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      const designData = {
-        id: projectId || `design_${Date.now()}`,
-        name: projectName,
-        description: projectDescription,
-        version,
-        elements,
-        canvasSettings,
-        metadata: {
-          ...projectMetadata,
-          updatedAt: new Date().toISOString(),
-          elementCount: elements.length
-        }
-      };
-
-      // Simulate API call to save design
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Use the canvas store's saveProject function with current project name and description
+      const savedProjectId = await saveProject(projectName, projectDescription);
       
-      // Here you would typically make an API call to your backend
-      console.log('Saving design:', designData);
-      localStorage.setItem(`design_${designData.id}`, JSON.stringify(designData));
-
-      setNotification({
-        open: true,
-        message: `Design "${projectName}" saved successfully!`,
-        severity: 'success',
-      });
-      setSaveDialogOpen(false);
+      if (savedProjectId) {
+        setNotification({
+          open: true,
+          message: `Design "${projectName}" saved successfully!`,
+          severity: 'success',
+        });
+        setSaveDialogOpen(false);
+      } else {
+        throw new Error('Failed to save project');
+      }
     } catch (error) {
+      console.error('Save error:', error);
       setNotification({
         open: true,
         message: 'Failed to save design. Please try again.',
@@ -1141,7 +1166,7 @@ const CanvasEditor = () => {
     } finally {
       setSaving(false);
     }
-  }, [projectId, projectName, projectDescription, version, elements, canvasSettings, projectMetadata]);
+  }, [saveProject, projectName, projectDescription]);
 
   // Version management
   const handleCreateVersion = useCallback(async () => {
@@ -1594,7 +1619,7 @@ const CanvasEditor = () => {
               <FormControl fullWidth size="small" sx={{ mb: 2 }}>
                 <InputLabel>Canvas Size</InputLabel>
                 <Select
-                  value={`${canvasSettings.width}x${canvasSettings.height}`}
+                  value={`${canvasSettings.width || 1200}x${canvasSettings.height || 900}`}
                   label="Canvas Size"
                   onChange={(e) => {
                     const [width, height] = e.target.value.split('x').map(Number);
@@ -1661,8 +1686,8 @@ const CanvasEditor = () => {
                 onClick={handleCanvasClick}
                 sx={{
                   position: 'relative',
-                  width: canvasSettings.width,
-                  height: canvasSettings.height,
+                  width: canvasSettings.width || 1200,
+                  height: canvasSettings.height || 900,
                   backgroundColor: 'white',
                   border: '2px solid #E2E8F0',
                   borderRadius: 2,
@@ -1788,7 +1813,7 @@ const CanvasEditor = () => {
               <FormControl fullWidth>
                 <InputLabel>Category</InputLabel>
                 <Select
-                  value={projectMetadata.category}
+                  value={projectMetadata.category || ''}
                   label="Category"
                   onChange={(e) => setProjectMetadata(prev => ({ ...prev, category: e.target.value }))}
                 >
@@ -1817,7 +1842,7 @@ const CanvasEditor = () => {
                   • {elements.length} component{elements.length !== 1 ? 's' : ''}
                 </Typography>
                 <Typography variant="body2">
-                  • Canvas size: {canvasSettings.width} × {canvasSettings.height}
+                  • Canvas size: {canvasSettings.width || 1200} × {canvasSettings.height || 900}
                 </Typography>
                 <Typography variant="body2">
                   • Last modified: {new Date().toLocaleString()}
@@ -1877,7 +1902,7 @@ const CanvasEditor = () => {
                   • {elements.length} component{elements.length !== 1 ? 's' : ''}
                 </Typography>
                 <Typography variant="body2">
-                  • Canvas: {canvasSettings.width} × {canvasSettings.height}
+                  • Canvas: {canvasSettings.width || 1200} × {canvasSettings.height || 900}
                 </Typography>
               </Box>
             </Stack>
@@ -1939,8 +1964,8 @@ const CanvasEditor = () => {
               <Box
                 sx={{
                   position: 'relative',
-                  width: canvasSettings.width,
-                  height: canvasSettings.height,
+                  width: canvasSettings.width || 1200,
+                  height: canvasSettings.height || 900,
                   backgroundColor: 'white',
                   border: '1px solid #e0e0e0',
                   borderRadius: 2,

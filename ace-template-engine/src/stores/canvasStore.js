@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+          import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { v4 as uuid } from 'uuid';
 import { produce } from 'immer';
@@ -27,6 +27,8 @@ const useCanvasStore = create(
 
     // Canvas settings
     canvasSettings: {
+      width: 1200,
+      height: 900,
       zoom: 100,
       showGrid: true,
       showRulers: true,
@@ -146,26 +148,65 @@ const useCanvasStore = create(
     })),
 
     // Project actions
-    saveProject: async () => {
+    saveProject: async (projectName, projectDescription) => {
       const state = get();
+      
+      // Update project info if provided
+      const currentProject = {
+        ...state.project,
+        name: projectName || state.project.name,
+        description: projectDescription || state.project.description || '',
+        lastModified: new Date(),
+      };
+      
       const designData = {
-        name: state.project.name,
-        description: state.project.description || '',
-        components: state.elements,
+        name: currentProject.name,
+        description: currentProject.description,
+        components: state.elements.map(element => ({
+          id: element.id,
+          type: element.type,
+          name: element.name || element.type,
+          properties: element.properties || {},
+          styles: element.styles || {},
+          position: {
+            x: element.x || 0,
+            y: element.y || 0
+          },
+          size: {
+            width: element.width || 100,
+            height: element.height || 100
+          },
+          zIndex: element.zIndex || 0,
+          visible: element.visible !== undefined ? element.visible : true,
+          locked: element.locked || false
+        })),
         canvasConfig: {
-          width: 1200,
-          height: 800,
-          zoomLevel: state.canvasSettings.zoom || 100,
-          showGrid: state.canvasSettings.showGrid,
+          width: state.canvasSettings?.width || 1200,
+          height: state.canvasSettings?.height || 900,
+          zoomLevel: state.canvasSettings?.zoom || 100,
+          showGrid: state.canvasSettings?.showGrid !== undefined ? state.canvasSettings.showGrid : true,
         },
         status: 'DRAFT',
       };
       
+      // Validate required fields before sending
+      if (!designData.canvasConfig) {
+        console.error('Canvas config is missing, using defaults');
+        designData.canvasConfig = {
+          width: 1200,
+          height: 900,
+          zoomLevel: 100,
+          showGrid: true,
+        };
+      }
+      
+      console.log('Saving design data:', designData);
+      
       try {
         let savedDesign;
-        if (state.project.id) {
+        if (currentProject.id) {
           // Update existing design
-          savedDesign = await designApi.updateDesign(state.project.id, designData);
+          savedDesign = await designApi.updateDesign(currentProject.id, designData);
         } else {
           // Create new design
           savedDesign = await designApi.createDesign(designData);
@@ -173,6 +214,8 @@ const useCanvasStore = create(
         
         set((state) => produce(state, (draft) => {
           draft.project.id = savedDesign.id;
+          draft.project.name = savedDesign.name;
+          draft.project.description = savedDesign.description;
           draft.project.lastModified = new Date(savedDesign.updatedAt);
         }));
         
@@ -181,8 +224,9 @@ const useCanvasStore = create(
         console.error('Failed to save project to API:', error);
         // Fallback to localStorage
         const projectData = {
-          id: state.project.id || uuid(),
-          name: state.project.name,
+          id: currentProject.id || uuid(),
+          name: currentProject.name,
+          description: currentProject.description,
           elements: state.elements,
           lastModified: new Date(),
         };
@@ -199,12 +243,25 @@ const useCanvasStore = create(
     loadProject: async (projectId) => {
       try {
         // Load design from API using the unified endpoint
-        const design = await designApi.getDesign(projectId);
+        const design = await designApi.getDesignById(projectId);
         
         if (design) {
           set((state) => produce(state, (draft) => {
             // Convert design components to canvas elements
-            draft.elements = design.components || [];
+            draft.elements = (design.components || []).map(component => ({
+              id: component.id,
+              type: component.type,
+              name: component.name,
+              properties: component.properties || {},
+              styles: component.styles || {},
+              x: component.position?.x || 0,
+              y: component.position?.y || 0,
+              width: component.size?.width || 100,
+              height: component.size?.height || 100,
+              zIndex: component.zIndex || 0,
+              visible: component.visible !== undefined ? component.visible : true,
+              locked: component.locked || false
+            }));
             draft.selectedElementId = null;
             draft.project = {
               id: design.id,
@@ -212,6 +269,18 @@ const useCanvasStore = create(
               description: design.description,
               lastModified: new Date(design.updatedAt),
             };
+            
+            // Load canvas settings if available
+            if (design.canvasConfig) {
+              draft.canvasSettings = {
+                ...draft.canvasSettings,
+                width: design.canvasConfig.width || draft.canvasSettings.width,
+                height: design.canvasConfig.height || draft.canvasSettings.height,
+                zoom: design.canvasConfig.zoomLevel || draft.canvasSettings.zoom,
+                showGrid: design.canvasConfig.showGrid !== undefined ? design.canvasConfig.showGrid : draft.canvasSettings.showGrid,
+              };
+            }
+            
             draft.history = {
               past: [],
               present: null,
@@ -325,7 +394,9 @@ const useCanvasStore = create(
     // Project management actions
     loadAllProjects: async () => {
       try {
+        console.log('Canvas store: Loading designs from API...');
         const designs = await designApi.getAllDesigns();
+        console.log('Canvas store: Received designs:', designs);
         
         set((state) => produce(state, (draft) => {
           // Convert designs to project format for the UI
@@ -339,6 +410,7 @@ const useCanvasStore = create(
             tags: design.tags || [],
             isPublic: design.isPublic,
           }));
+          console.log('Canvas store: Projects set to:', draft.projects);
         }));
         
         return true;
@@ -368,7 +440,7 @@ const useCanvasStore = create(
 
     duplicateProject: async (projectId) => {
       try {
-        const originalDesign = await designApi.getDesign(projectId);
+        const originalDesign = await designApi.getDesignById(projectId);
         if (originalDesign) {
           const duplicatedData = {
             ...originalDesign,

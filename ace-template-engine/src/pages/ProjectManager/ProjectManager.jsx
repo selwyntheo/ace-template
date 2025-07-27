@@ -65,7 +65,9 @@ const ProjectManager = () => {
     const loadProjects = async () => {
       try {
         setLoading(true);
+        console.log('Loading projects from API...');
         await loadAllProjects();
+        console.log('Projects loaded, current projects:', projects);
       } catch (error) {
         console.error('Failed to load projects:', error);
       } finally {
@@ -75,6 +77,11 @@ const ProjectManager = () => {
     
     loadProjects();
   }, [loadAllProjects]);
+
+  // Debug log when projects change
+  useEffect(() => {
+    console.log('Projects updated:', projects);
+  }, [projects]);
 
   // Filter and sort projects
   const filteredProjects = projects

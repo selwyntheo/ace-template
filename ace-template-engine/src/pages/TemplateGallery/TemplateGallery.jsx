@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -17,6 +17,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   Search,
@@ -24,9 +26,12 @@ import {
   GetApp,
   Star,
   StarBorder,
+  Public,
+  Category,
 } from '@mui/icons-material';
 
 import { useCanvasStore } from '../../stores/canvasStore';
+import designApi from '../../services/designApi';
 
 const TemplateGallery = () => {
   const navigate = useNavigate();
@@ -34,254 +39,91 @@ const TemplateGallery = () => {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [favorites, setFavorites] = useState(new Set(['1', '3']));
+  const [favorites, setFavorites] = useState(new Set());
+  const [templates, setTemplates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock template data
-  const templates = [
-    {
-      id: '1',
-      name: 'Modern Landing Page',
-      description: 'Clean and modern landing page template with hero section and features',
-      category: 'web',
-      thumbnail: 'https://via.placeholder.com/300x200?text=Landing+Page',
-      elements: [
-        {
-          id: 'header-1',
-          type: 'text',
-          x: 50,
-          y: 50,
-          width: 400,
-          height: 60,
-          properties: {
-            content: 'Welcome to Our Platform',
-            fontSize: '32px',
-            fontWeight: 'bold',
-            color: '#1976d2',
-          },
-        },
-        {
-          id: 'subtitle-1',
-          type: 'text',
-          x: 50,
-          y: 130,
-          width: 500,
-          height: 40,
-          properties: {
-            content: 'Build amazing applications with our powerful tools',
-            fontSize: '18px',
-            color: '#666',
-          },
-        },
-        {
-          id: 'cta-button-1',
-          type: 'button',
-          x: 50,
-          y: 200,
-          width: 150,
-          height: 45,
-          properties: {
-            label: 'Get Started',
-            backgroundColor: '#1976d2',
-            color: '#ffffff',
-            borderRadius: '8px',
-          },
-        },
-      ],
-      tags: ['modern', 'landing', 'business'],
-      downloads: 1250,
-      rating: 4.8,
-    },
-    {
-      id: '2',
-      name: 'Email Newsletter',
-      description: 'Professional email newsletter template with responsive design',
-      category: 'email',
-      thumbnail: 'https://via.placeholder.com/300x200?text=Newsletter',
-      elements: [
-        {
-          id: 'email-header',
-          type: 'container',
-          x: 20,
-          y: 20,
-          width: 600,
-          height: 80,
-          properties: {
-            backgroundColor: '#f8f9fa',
-            borderRadius: '8px',
-            padding: '20px',
-          },
-        },
-        {
-          id: 'email-title',
-          type: 'text',
-          x: 40,
-          y: 40,
-          width: 300,
-          height: 40,
-          properties: {
-            content: 'Weekly Newsletter',
-            fontSize: '24px',
-            fontWeight: 'bold',
-          },
-        },
-      ],
-      tags: ['email', 'newsletter', 'professional'],
-      downloads: 890,
-      rating: 4.5,
-    },
-    {
-      id: '3',
-      name: 'Dashboard Layout',
-      description: 'Complete dashboard template with charts and data visualization',
-      category: 'dashboard',
-      thumbnail: 'https://via.placeholder.com/300x200?text=Dashboard',
-      elements: [
-        {
-          id: 'dashboard-title',
-          type: 'text',
-          x: 30,
-          y: 30,
-          width: 300,
-          height: 50,
-          properties: {
-            content: 'Analytics Dashboard',
-            fontSize: '28px',
-            fontWeight: 'bold',
-          },
-        },
-        {
-          id: 'chart-container',
-          type: 'container',
-          x: 30,
-          y: 100,
-          width: 400,
-          height: 250,
-          properties: {
-            backgroundColor: '#ffffff',
-            borderRadius: '12px',
-            border: '1px solid #e0e0e0',
-          },
-        },
-      ],
-      tags: ['dashboard', 'analytics', 'charts'],
-      downloads: 2100,
-      rating: 4.9,
-    },
-    {
-      id: '4',
-      name: 'Product Showcase',
-      description: 'Elegant product showcase template for e-commerce',
-      category: 'ecommerce',
-      thumbnail: 'https://via.placeholder.com/300x200?text=Product',
-      elements: [
-        {
-          id: 'product-image',
-          type: 'image',
-          x: 50,
-          y: 50,
-          width: 300,
-          height: 250,
-          properties: {
-            src: 'https://via.placeholder.com/300x250?text=Product+Image',
-            alt: 'Product Image',
-            borderRadius: '8px',
-          },
-        },
-        {
-          id: 'product-title',
-          type: 'text',
-          x: 400,
-          y: 70,
-          width: 250,
-          height: 40,
-          properties: {
-            content: 'Premium Product',
-            fontSize: '24px',
-            fontWeight: 'bold',
-          },
-        },
-      ],
-      tags: ['product', 'ecommerce', 'showcase'],
-      downloads: 750,
-      rating: 4.6,
-    },
-    {
-      id: '5',
-      name: 'Contact Form',
-      description: 'Simple and clean contact form template',
-      category: 'forms',
-      thumbnail: 'https://via.placeholder.com/300x200?text=Contact+Form',
-      elements: [
-        {
-          id: 'form-title',
-          type: 'text',
-          x: 50,
-          y: 30,
-          width: 200,
-          height: 40,
-          properties: {
-            content: 'Contact Us',
-            fontSize: '24px',
-            fontWeight: 'bold',
-          },
-        },
-        {
-          id: 'name-input',
-          type: 'input',
-          x: 50,
-          y: 90,
-          width: 300,
-          height: 40,
-          properties: {
-            placeholder: 'Your Name',
-            type: 'text',
-          },
-        },
-        {
-          id: 'email-input',
-          type: 'input',
-          x: 50,
-          y: 150,
-          width: 300,
-          height: 40,
-          properties: {
-            placeholder: 'Your Email',
-            type: 'email',
-          },
-        },
-      ],
-      tags: ['form', 'contact', 'simple'],
-      downloads: 1500,
-      rating: 4.7,
-    },
-  ];
+  // Fetch published designs on component mount
+  useEffect(() => {
+    fetchPublishedDesigns();
+  }, []);
 
-  const categories = [
-    { value: 'all', label: 'All Categories' },
-    { value: 'web', label: 'Web Pages' },
-    { value: 'email', label: 'Email Templates' },
-    { value: 'dashboard', label: 'Dashboards' },
-    { value: 'ecommerce', label: 'E-commerce' },
-    { value: 'forms', label: 'Forms' },
-  ];
-
-  const filteredTemplates = templates.filter(template => {
-    const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesCategory = categoryFilter === 'all' || template.category === categoryFilter;
-    
-    return matchesSearch && matchesCategory;
-  });
-
-  const handleUseTemplate = (template) => {
-    newProject();
-    loadTemplate(template);
-    navigate('/editor');
+  const fetchPublishedDesigns = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch both published and public designs
+      const [publishedDesigns, publicDesigns] = await Promise.all([
+        designApi.getDesignsByStatus('PUBLISHED'),
+        designApi.getPublicDesigns()
+      ]);
+      
+      // Combine and deduplicate designs
+      const allTemplates = [...publishedDesigns, ...publicDesigns];
+      const uniqueTemplates = allTemplates.reduce((acc, design) => {
+        if (!acc.find(t => t.id === design.id)) {
+          acc.push({
+            id: design.id,
+            name: design.name,
+            description: design.description || 'No description available',
+            category: design.metadata?.category || 'general',
+            thumbnail: design.previewImage || `https://via.placeholder.com/300x200?text=${encodeURIComponent(design.name)}`,
+            elements: design.components || [],
+            tags: design.tags || [],
+            isPublic: design.isPublic,
+            status: design.status,
+            createdAt: design.createdAt,
+            updatedAt: design.updatedAt,
+            canvasConfig: design.canvasConfig
+          });
+        }
+        return acc;
+      }, []);
+      
+      setTemplates(uniqueTemplates);
+    } catch (err) {
+      console.error('Error fetching published designs:', err);
+      setError('Failed to load templates. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleToggleFavorite = (templateId) => {
+  const handleUseTemplate = async (template) => {
+    try {
+      // Create a new project and load the template
+      newProject();
+      
+      // Transform template elements back to canvas format
+      const canvasElements = template.elements.map(element => ({
+        ...element,
+        x: element.position?.x || element.x || 0,
+        y: element.position?.y || element.y || 0,
+        width: element.size?.width || element.width || 100,
+        height: element.size?.height || element.height || 100,
+      }));
+      
+      loadTemplate({ 
+        elements: canvasElements,
+        canvasConfig: template.canvasConfig
+      });
+      
+      // Navigate to the editor
+      navigate('/editor');
+    } catch (error) {
+      console.error('Error loading template:', error);
+      setError('Failed to load template. Please try again.');
+    }
+  };
+
+  const handlePreviewTemplate = (template) => {
+    // For now, just use the template - could open a preview modal later
+    handleUseTemplate(template);
+  };
+
+  const toggleFavorite = (templateId) => {
     setFavorites(prev => {
       const newFavorites = new Set(prev);
       if (newFavorites.has(templateId)) {
@@ -293,10 +135,24 @@ const TemplateGallery = () => {
     });
   };
 
-  const handlePreview = (template) => {
-    // Open preview modal or navigate to preview page
-    console.log('Preview template:', template);
-  };
+  const categories = [
+    { value: 'all', label: 'All Categories' },
+    { value: 'published', label: 'Published Designs' },
+    { value: 'public', label: 'Public Designs' },
+    { value: 'dashboard', label: 'Dashboards' },
+    { value: 'form', label: 'Forms' },
+    { value: 'layout', label: 'Layouts' },
+  ];
+
+  const filteredTemplates = templates.filter(template => {
+    const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (template.tags && template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
+    
+    const matchesCategory = categoryFilter === 'all' || template.category === categoryFilter;
+    
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>

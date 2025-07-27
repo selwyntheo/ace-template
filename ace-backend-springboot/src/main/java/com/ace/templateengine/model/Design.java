@@ -4,6 +4,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -167,6 +168,7 @@ public class Design {
         public void setOrientation(String orientation) { this.orientation = orientation; }
     }
     
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class DesignComponent {
         private String id;
         private String type;
