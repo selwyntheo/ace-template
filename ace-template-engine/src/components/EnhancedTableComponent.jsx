@@ -505,7 +505,6 @@ const EnhancedTableComponent = ({
       selectedColumns: selectAll ? prev.availableColumns.map(col => col.field) : []
     }));
   };
-  };
 
   // Execute custom queries (predefined for demo)
   const executeCustomQuery = async (query) => {
@@ -1026,6 +1025,15 @@ const EnhancedTableComponent = ({
                 onClick={() => setAdvancedOptions(prev => ({ 
                   ...prev, 
                   enablePagination: !prev.enablePagination 
+                }))}
+                clickable
+              />
+              <Chip 
+                label="Column Selection" 
+                color={advancedOptions.columnSelection ? 'primary' : 'default'}
+                onClick={() => setAdvancedOptions(prev => ({ 
+                  ...prev, 
+                  columnSelection: !prev.columnSelection 
                 }))}
                 clickable
               />
