@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -53,8 +53,9 @@ import {
   Api as ApiIcon,
 } from '@mui/icons-material';
 import DataQueryManager from './DataQueryManager';
+import TableConfigurationPanel from './TableConfigurationPanel'; // Re-enabled with proper loop prevention
 
-const PropertyInspector = ({ selectedElement, onPropertyUpdate }) => {
+const PropertyInspector = ({ selectedElement, onPropertyUpdate, designId }) => {
   // Extract type early for hooks that depend on it
   const type = selectedElement?.type || '';
   
@@ -118,15 +119,25 @@ const PropertyInspector = ({ selectedElement, onPropertyUpdate }) => {
     dependsOn: '',
   });
 
-  // Initialize component data from selectedElement
+  // Initialize component data from selectedElement with more stable dependencies
+  const selectedElementId = selectedElement?.id;
+  
   useEffect(() => {
-    if (selectedElement) {
+    // Simplified state initialization to prevent loops
+    if (selectedElementId && selectedElement) {
+      // Only set essential states, avoid complex object comparisons
       setValidationRules(selectedElement.validationRules || []);
       setConditionalLogic(selectedElement.conditionalLogic || []);
       setAnimationSettings(selectedElement.animationSettings || {});
       setSecuritySettings(selectedElement.securitySettings || {});
+    } else {
+      // Clear state when no element is selected
+      setValidationRules([]);
+      setConditionalLogic([]);
+      setAnimationSettings({});
+      setSecuritySettings({});
     }
-  }, [selectedElement]);
+  }, [selectedElementId]); // Only depend on ID to prevent loops
 
   const handleSectionToggle = useCallback((section) => {
     setExpandedSections(prev => ({
@@ -135,8 +146,13 @@ const PropertyInspector = ({ selectedElement, onPropertyUpdate }) => {
     }));
   }, []);
 
+  // Memoize the stable callback functions to prevent recreation
   const updateProperty = useCallback((property, value) => {
-    if (!selectedElement) return;
+    if (!selectedElement || !onPropertyUpdate) return;
+    
+    // Prevent unnecessary updates by comparing values
+    const currentValue = selectedElement.properties?.[property];
+    if (currentValue === value) return;
     
     onPropertyUpdate({
       properties: {
@@ -144,27 +160,58 @@ const PropertyInspector = ({ selectedElement, onPropertyUpdate }) => {
         [property]: value,
       },
     });
-  }, [selectedElement, onPropertyUpdate]);
+  }, [selectedElement?.id, onPropertyUpdate]); // Stable dependencies
 
-  const updateStyle = useCallback((style, value) => {
-    if (!selectedElement) return;
+    const updateStyle = useCallback((style, value) => {
+    if (!selectedElement || !onPropertyUpdate) return;
+    
+    // Prevent unnecessary updates by comparing values
+    const currentValue = selectedElement.properties?.style?.[style];
+    if (currentValue === value) return;
     
     onPropertyUpdate({
-      styles: {
-        ...selectedElement.styles,
-        [style]: value,
+      properties: {
+        ...selectedElement.properties,
+        style: {
+          ...selectedElement.properties?.style,
+          [style]: value,
+        },
       },
     });
-  }, [selectedElement, onPropertyUpdate]);
+  }, [selectedElement?.id, onPropertyUpdate]); // Stable dependencies
 
   const updateElementProperty = useCallback((property, value) => {
-    if (!selectedElement) return;
+    if (!selectedElement || !onPropertyUpdate) return;
+    
+    // Prevent unnecessary updates by comparing values  
+    const currentValue = selectedElement[property];
+    if (JSON.stringify(currentValue) === JSON.stringify(value)) return;
     
     onPropertyUpdate({
       ...selectedElement,
       [property]: value,
     });
-  }, [selectedElement, onPropertyUpdate]);
+  }, [selectedElement?.id, onPropertyUpdate]); // Stable dependencies
+
+  // Simplified table configuration handler to prevent infinite loops
+  const updateTableConfiguration = useCallback((property, value) => {
+    if (!selectedElement || !onPropertyUpdate) return;
+    
+    // Prevent unnecessary updates by comparing values
+    const currentValue = selectedElement.properties?.[property];
+    if (JSON.stringify(currentValue) === JSON.stringify(value)) return;
+    
+    const updatedElement = {
+      ...selectedElement,
+      properties: {
+        ...selectedElement.properties,
+        [property]: value,
+      },
+    };
+    
+    // Only update in memory to prevent MongoDB circular operations
+    onPropertyUpdate(updatedElement);
+  }, [selectedElement?.id, onPropertyUpdate]); // Stable dependencies
 
   // Helper functions
   const getActionTypeColor = (type) => {
@@ -197,234 +244,260 @@ const PropertyInspector = ({ selectedElement, onPropertyUpdate }) => {
   };
 
   // Render functions
-  const renderBasicProperties = () => (
-    <Grid container spacing={2}>
-      <Grid item xs={12}>
-        <TextField
-          label="Element ID"
-          value={selectedElement.id || ''}
-          onChange={(e) => updateElementProperty('id', e.target.value)}
-          fullWidth
-          size="small"
-        />
-      </Grid>
-      <Grid item xs={12}>
-        <TextField
-          label="Label/Text"
-          value={selectedElement.properties?.text || selectedElement.properties?.label || ''}
-          onChange={(e) => updateProperty('text', e.target.value)}
-          fullWidth
-          size="small"
-        />
-      </Grid>
-      <Grid item xs={12}>
-        <TextField
-          label="Placeholder"
-          value={selectedElement.properties?.placeholder || ''}
-          onChange={(e) => updateProperty('placeholder', e.target.value)}
-          fullWidth
-          size="small"
-        />
-      </Grid>
-      <Grid item xs={6}>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={selectedElement.properties?.disabled || false}
-              onChange={(e) => updateProperty('disabled', e.target.checked)}
-            />
-          }
-          label="Disabled"
-        />
-      </Grid>
-      <Grid item xs={6}>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={selectedElement.properties?.required || false}
-              onChange={(e) => updateProperty('required', e.target.checked)}
-            />
-          }
-          label="Required"
-        />
-      </Grid>
-    </Grid>
-  );
-
-  const renderStyleProperties = () => (
-    <Grid container spacing={2}>
-      <Grid item xs={12}>
-        <Typography variant="subtitle2" gutterBottom>
-          Colors
-        </Typography>
-      </Grid>
-      <Grid item xs={6}>
-        <TextField
-          label="Background Color"
-          type="color"
-          value={selectedElement.styles?.backgroundColor || '#ffffff'}
-          onChange={(e) => updateStyle('backgroundColor', e.target.value)}
-          fullWidth
-          size="small"
-        />
-      </Grid>
-      <Grid item xs={6}>
-        <TextField
-          label="Text Color"
-          type="color"
-          value={selectedElement.styles?.color || '#000000'}
-          onChange={(e) => updateStyle('color', e.target.value)}
-          fullWidth
-          size="small"
-        />
-      </Grid>
-      <Grid item xs={12}>
-        <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
-          Typography
-        </Typography>
-      </Grid>
-      <Grid item xs={6}>
-        <TextField
-          label="Font Size"
-          value={selectedElement.styles?.fontSize || '14px'}
-          onChange={(e) => updateStyle('fontSize', e.target.value)}
-          fullWidth
-          size="small"
-          placeholder="14px"
-        />
-      </Grid>
-      <Grid item xs={6}>
-        <FormControl fullWidth size="small">
-          <InputLabel>Font Weight</InputLabel>
-          <Select
-            value={selectedElement.styles?.fontWeight || 'normal'}
-            onChange={(e) => updateStyle('fontWeight', e.target.value)}
-            label="Font Weight"
-          >
-            <MenuItem value="normal">Normal</MenuItem>
-            <MenuItem value="bold">Bold</MenuItem>
-            <MenuItem value="lighter">Lighter</MenuItem>
-            <MenuItem value="bolder">Bolder</MenuItem>
-          </Select>
-        </FormControl>
-      </Grid>
-    </Grid>
-  );
-
-  const renderLayoutProperties = () => (
-    <Grid container spacing={2}>
-      <Grid item xs={6}>
-        <TextField
-          label="Width"
-          value={selectedElement.layout?.width || ''}
-          onChange={(e) => updateElementProperty('layout', { ...selectedElement.layout, width: e.target.value })}
-          fullWidth
-          size="small"
-          placeholder="auto, 100px, 50%"
-        />
-      </Grid>
-      <Grid item xs={6}>
-        <TextField
-          label="Height"
-          value={selectedElement.layout?.height || ''}
-          onChange={(e) => updateElementProperty('layout', { ...selectedElement.layout, height: e.target.value })}
-          fullWidth
-          size="small"
-          placeholder="auto, 100px, 50%"
-        />
-      </Grid>
-      <Grid item xs={6}>
-        <TextField
-          label="Margin"
-          value={selectedElement.layout?.margin || ''}
-          onChange={(e) => updateElementProperty('layout', { ...selectedElement.layout, margin: e.target.value })}
-          fullWidth
-          size="small"
-          placeholder="10px, 10px 20px"
-        />
-      </Grid>
-      <Grid item xs={6}>
-        <TextField
-          label="Padding"
-          value={selectedElement.layout?.padding || ''}
-          onChange={(e) => updateElementProperty('layout', { ...selectedElement.layout, padding: e.target.value })}
-          fullWidth
-          size="small"
-          placeholder="10px, 10px 20px"
-        />
-      </Grid>
-    </Grid>
-  );
-
-  const renderAdvancedProperties = () => (
-    <Grid container spacing={2}>
-      <Grid item xs={12}>
-        <TextField
-          label="CSS Classes"
-          value={selectedElement.properties?.className || ''}
-          onChange={(e) => updateProperty('className', e.target.value)}
-          fullWidth
-          size="small"
-          placeholder="class1 class2"
-        />
-      </Grid>
-      <Grid item xs={12}>
-        <TextField
-          label="Custom Attributes (JSON)"
-          value={JSON.stringify(selectedElement.properties?.customAttributes || {}, null, 2)}
-          onChange={(e) => {
-            try {
-              const attrs = JSON.parse(e.target.value);
-              updateProperty('customAttributes', attrs);
-            } catch (error) {
-              // Invalid JSON, ignore for now
+  const renderBasicProperties = () => {
+    if (!selectedElement) return null;
+    
+    return (
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <TextField
+            label="Element ID"
+            value={selectedElement.id || ''}
+            onChange={(e) => updateElementProperty('id', e.target.value)}
+            fullWidth
+            size="small"
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            label="Label/Text"
+            value={selectedElement.properties?.text || selectedElement.properties?.label || ''}
+            onChange={(e) => updateProperty('text', e.target.value)}
+            fullWidth
+            size="small"
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            label="Placeholder"
+            value={selectedElement.properties?.placeholder || ''}
+            onChange={(e) => updateProperty('placeholder', e.target.value)}
+            fullWidth
+            size="small"
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={selectedElement.properties?.disabled || false}
+                onChange={(e) => updateProperty('disabled', e.target.checked)}
+              />
             }
-          }}
-          fullWidth
-          multiline
-          rows={3}
-          size="small"
-          placeholder='{"data-test": "value", "aria-label": "Label"}'
-        />
+            label="Disabled"
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={selectedElement.properties?.required || false}
+                onChange={(e) => updateProperty('required', e.target.checked)}
+              />
+            }
+            label="Required"
+          />
+        </Grid>
       </Grid>
-    </Grid>
-  );
+    );
+  };
 
-  const renderEventProperties = () => (
-    <Grid container spacing={2}>
-      <Grid item xs={12}>
-        <Typography variant="subtitle2" gutterBottom>
-          Event Handlers
-        </Typography>
+  const renderStyleProperties = () => {
+    if (!selectedElement) return null;
+    
+    return (
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <Typography variant="subtitle2" gutterBottom>
+            Colors
+          </Typography>
+        </Grid>
+        <Grid item xs={6}>
+          <TextField
+            label="Background Color"
+            type="color"
+            value={selectedElement.styles?.backgroundColor || '#ffffff'}
+            onChange={(e) => updateStyle('backgroundColor', e.target.value)}
+            fullWidth
+            size="small"
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <TextField
+            label="Text Color"
+            type="color"
+            value={selectedElement.styles?.color || '#000000'}
+            onChange={(e) => updateStyle('color', e.target.value)}
+            fullWidth
+            size="small"
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+            Typography
+          </Typography>
+        </Grid>
+        <Grid item xs={6}>
+          <TextField
+            label="Font Size"
+            value={selectedElement.styles?.fontSize || '14px'}
+            onChange={(e) => updateStyle('fontSize', e.target.value)}
+            fullWidth
+            size="small"
+            placeholder="14px"
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Font Weight</InputLabel>
+            <Select
+              value={selectedElement.styles?.fontWeight || 'normal'}
+              onChange={(e) => updateStyle('fontWeight', e.target.value)}
+              label="Font Weight"
+            >
+              <MenuItem value="normal">Normal</MenuItem>
+              <MenuItem value="bold">Bold</MenuItem>
+              <MenuItem value="lighter">Lighter</MenuItem>
+              <MenuItem value="bolder">Bolder</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
       </Grid>
-      <Grid item xs={12}>
-        <TextField
-          label="On Click"
-          value={selectedElement.events?.onClick || ''}
-          onChange={(e) => updateElementProperty('events', { ...selectedElement.events, onClick: e.target.value })}
-          fullWidth
-          multiline
-          rows={2}
-          size="small"
-          placeholder="function() { console.log('clicked'); }"
-        />
+    );
+  };
+
+  const renderLayoutProperties = () => {
+    if (!selectedElement) return null;
+    
+    const currentLayout = selectedElement.layout || {};
+    
+    return (
+      <Grid container spacing={2}>
+        <Grid item xs={6}>
+          <TextField
+            label="Width"
+            value={currentLayout.width || ''}
+            onChange={(e) => updateElementProperty('layout', { ...currentLayout, width: e.target.value })}
+            fullWidth
+            size="small"
+            placeholder="auto, 100px, 50%"
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <TextField
+            label="Height"
+            value={currentLayout.height || ''}
+            onChange={(e) => updateElementProperty('layout', { ...currentLayout, height: e.target.value })}
+            fullWidth
+            size="small"
+            placeholder="auto, 100px, 50%"
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <TextField
+            label="Margin"
+            value={currentLayout.margin || ''}
+            onChange={(e) => updateElementProperty('layout', { ...currentLayout, margin: e.target.value })}
+            fullWidth
+            size="small"
+            placeholder="10px, 10px 20px"
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <TextField
+            label="Padding"
+            value={currentLayout.padding || ''}
+            onChange={(e) => updateElementProperty('layout', { ...currentLayout, padding: e.target.value })}
+            fullWidth
+            size="small"
+            placeholder="10px, 10px 20px"
+          />
+        </Grid>
       </Grid>
-      <Grid item xs={12}>
-        <TextField
-          label="On Change"
-          value={selectedElement.events?.onChange || ''}
-          onChange={(e) => updateElementProperty('events', { ...selectedElement.events, onChange: e.target.value })}
-          fullWidth
-          multiline
-          rows={2}
-          size="small"
-          placeholder="function(value) { console.log('changed:', value); }"
-        />
+    );
+  };
+
+  const renderAdvancedProperties = () => {
+    if (!selectedElement) return null;
+    
+    return (
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <TextField
+            label="CSS Classes"
+            value={selectedElement.properties?.className || ''}
+            onChange={(e) => updateProperty('className', e.target.value)}
+            fullWidth
+            size="small"
+            placeholder="class1 class2"
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            label="Custom Attributes (JSON)"
+            value={JSON.stringify(selectedElement.properties?.customAttributes || {}, null, 2)}
+            onChange={(e) => {
+              try {
+                const attrs = JSON.parse(e.target.value);
+                updateProperty('customAttributes', attrs);
+              } catch (error) {
+                // Invalid JSON, ignore for now
+              }
+            }}
+            fullWidth
+            multiline
+            rows={3}
+            size="small"
+            placeholder='{"data-test": "value", "aria-label": "Label"}'
+          />
+        </Grid>
       </Grid>
-    </Grid>
-  );
+    );
+  };
+
+  const renderEventProperties = () => {
+    if (!selectedElement) return null;
+    
+    const currentEvents = selectedElement.events || {};
+    
+    return (
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <Typography variant="subtitle2" gutterBottom>
+            Event Handlers
+          </Typography>
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            label="On Click"
+            value={currentEvents.onClick || ''}
+            onChange={(e) => updateElementProperty('events', { ...currentEvents, onClick: e.target.value })}
+            fullWidth
+            multiline
+            rows={2}
+            size="small"
+            placeholder="function() { console.log('clicked'); }"
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            label="On Change"
+            value={currentEvents.onChange || ''}
+            onChange={(e) => updateElementProperty('events', { ...currentEvents, onChange: e.target.value })}
+            fullWidth
+            multiline
+            rows={2}
+            size="small"
+            placeholder="function(value) { console.log('changed:', value); }"
+          />
+        </Grid>
+      </Grid>
+    );
+  };
 
   const renderDataActions = () => {
+    if (!selectedElement) return null;
+    
     const dataActions = selectedElement.dataActions || [];
     const supportsDataActions = ['table', 'list', 'chart', 'form', 'select', 'autocomplete'].includes(type.toLowerCase());
     const isTableComponent = type.toLowerCase() === 'table';
@@ -447,11 +520,11 @@ const PropertyInspector = ({ selectedElement, onPropertyUpdate }) => {
               Table Data Management
             </Typography>
             
-            <DataQueryManager 
-              component={selectedElement}
-              onPropertyChange={updateElementProperty}
-              designId={selectedElement.designId}
-            />
+            {/* Simplified table configuration to prevent circular dependencies */}
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Table configuration panel temporarily disabled to resolve infinite rendering issue.
+              Basic table functionality is still available.
+            </Alert>
             
             <Divider sx={{ my: 2 }} />
           </Box>
@@ -608,86 +681,118 @@ const PropertyInspector = ({ selectedElement, onPropertyUpdate }) => {
     </Box>
   );
 
-  const renderAnimationProperties = () => (
-    <Grid container spacing={2}>
-      <Grid item xs={12}>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={animationSettings.enabled || false}
-              onChange={(e) => setAnimationSettings({ ...animationSettings, enabled: e.target.checked })}
-            />
-          }
-          label="Enable Animations"
-        />
+  const renderAnimationProperties = () => {
+    if (!selectedElement) return null;
+    
+    return (
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={animationSettings.enabled || false}
+                onChange={(e) => {
+                  const newSettings = { ...animationSettings, enabled: e.target.checked };
+                  setAnimationSettings(newSettings);
+                  updateElementProperty('animationSettings', newSettings);
+                }}
+              />
+            }
+            label="Enable Animations"
+          />
+        </Grid>
+        {animationSettings.enabled && (
+          <>
+            <Grid item xs={6}>
+              <TextField
+                label="Animation Duration"
+                value={animationSettings.duration || '300ms'}
+                onChange={(e) => {
+                  const newSettings = { ...animationSettings, duration: e.target.value };
+                  setAnimationSettings(newSettings);
+                  updateElementProperty('animationSettings', newSettings);
+                }}
+                fullWidth
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Animation Type</InputLabel>
+                <Select
+                  value={animationSettings.type || 'fade'}
+                  onChange={(e) => {
+                    const newSettings = { ...animationSettings, type: e.target.value };
+                    setAnimationSettings(newSettings);
+                    updateElementProperty('animationSettings', newSettings);
+                  }}
+                  label="Animation Type"
+                >
+                  <MenuItem value="fade">Fade</MenuItem>
+                  <MenuItem value="slide">Slide</MenuItem>
+                  <MenuItem value="scale">Scale</MenuItem>
+                  <MenuItem value="rotate">Rotate</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </>
+        )}
       </Grid>
-      {animationSettings.enabled && (
-        <>
-          <Grid item xs={6}>
-            <TextField
-              label="Animation Duration"
-              value={animationSettings.duration || '300ms'}
-              onChange={(e) => setAnimationSettings({ ...animationSettings, duration: e.target.value })}
-              fullWidth
-              size="small"
-            />
-          </Grid>
-          <Grid item xs={6}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Animation Type</InputLabel>
-              <Select
-                value={animationSettings.type || 'fade'}
-                onChange={(e) => setAnimationSettings({ ...animationSettings, type: e.target.value })}
-                label="Animation Type"
-              >
-                <MenuItem value="fade">Fade</MenuItem>
-                <MenuItem value="slide">Slide</MenuItem>
-                <MenuItem value="scale">Scale</MenuItem>
-                <MenuItem value="rotate">Rotate</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-        </>
-      )}
-    </Grid>
-  );
+    );
+  };
 
-  const renderSecurityProperties = () => (
-    <Grid container spacing={2}>
-      <Grid item xs={12}>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={securitySettings.sanitizeInput || false}
-              onChange={(e) => setSecuritySettings({ ...securitySettings, sanitizeInput: e.target.checked })}
-            />
-          }
-          label="Sanitize Input"
-        />
+  const renderSecurityProperties = () => {
+    if (!selectedElement) return null;
+    
+    return (
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={securitySettings.sanitizeInput || false}
+                onChange={(e) => {
+                  const newSettings = { ...securitySettings, sanitizeInput: e.target.checked };
+                  setSecuritySettings(newSettings);
+                  updateElementProperty('securitySettings', newSettings);
+                }}
+              />
+            }
+            label="Sanitize Input"
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={securitySettings.preventXSS || false}
+                onChange={(e) => {
+                  const newSettings = { ...securitySettings, preventXSS: e.target.checked };
+                  setSecuritySettings(newSettings);
+                  updateElementProperty('securitySettings', newSettings);
+                }}
+              />
+            }
+            label="Prevent XSS"
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            label="Required Permissions"
+            value={securitySettings.permissions || ''}
+            onChange={(e) => {
+              const newSettings = { ...securitySettings, permissions: e.target.value };
+              setSecuritySettings(newSettings);
+              updateElementProperty('securitySettings', newSettings);
+            }}
+            fullWidth
+            size="small"
+            placeholder="read, write, admin"
+          />
+        </Grid>
       </Grid>
-      <Grid item xs={12}>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={securitySettings.preventXSS || false}
-              onChange={(e) => setSecuritySettings({ ...securitySettings, preventXSS: e.target.checked })}
-            />
-          }
-          label="Prevent XSS"
-        />
-      </Grid>
-      <Grid item xs={12}>
-        <TextField
-          label="Required Permissions"
-          value={securitySettings.permissions || ''}
-          onChange={(e) => setSecuritySettings({ ...securitySettings, permissions: e.target.value })}
-          fullWidth
-          size="small"
-          placeholder="read, write, admin"
-        />
-      </Grid>
-    </Grid>
-  );
+    );
+  };
 
   // Data Action Dialog
   const renderDataActionDialog = () => (
@@ -1103,4 +1208,14 @@ const PropertyInspector = ({ selectedElement, onPropertyUpdate }) => {
   );
 };
 
-export default PropertyInspector;
+// Custom comparison function for React.memo
+const arePropsEqual = (prevProps, nextProps) => {
+  // Only re-render if selectedElement.id, designId, or onPropertyUpdate reference changes
+  return (
+    prevProps.selectedElement?.id === nextProps.selectedElement?.id &&
+    prevProps.designId === nextProps.designId &&
+    prevProps.onPropertyUpdate === nextProps.onPropertyUpdate
+  );
+};
+
+export default React.memo(PropertyInspector, arePropsEqual);

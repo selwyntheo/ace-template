@@ -105,8 +105,8 @@ import {
   Stop
 } from '@mui/icons-material';
 import { useCanvasStore } from '../stores/canvasStore';
-import EnhancedTableComponent from './EnhancedTableComponent';
-import PropertyInspector from './PropertyInspector';
+import EnhancedTableComponent from './EnhancedTableComponent'; // Original component with infinite loop fixes
+import PropertyInspector from './PropertyInspector'; // Original component with infinite loop fixes
 import { useParams } from 'react-router-dom';
 
 // Component library with proper drag/drop support
@@ -483,7 +483,7 @@ const componentLibrary = [
 ];
 
 // Canvas Element Component with working drag/resize
-const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect, isPreviewMode = false }) => {
+const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect, isPreviewMode = false, project }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -802,7 +802,8 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect, isPr
         return (
           <EnhancedTableComponent
             component={element}
-            onComponentUpdate={onUpdate}
+            onPropertyChange={onUpdate}
+            designId={project?.id}
             styles={commonStyles}
             isEditMode={!isPreviewMode}
           />
@@ -1712,6 +1713,7 @@ const CanvasEditor = () => {
                     onUpdate={(updates) => handleElementUpdate(element.id, updates)}
                     onDelete={handleElementDelete}
                     onSelect={selectElement}
+                    project={project}
                   />
                 ))}
 
@@ -1754,7 +1756,7 @@ const CanvasEditor = () => {
             <PropertyInspector
               selectedElement={selectedElementId ? elements.find(el => el.id === selectedElementId) : null}
               onPropertyUpdate={(updates) => selectedElementId && handleElementUpdate(selectedElementId, updates)}
-              elements={elements}
+              designId={project?.id}
             />
           </Box>
         </Box>
@@ -1995,6 +1997,7 @@ const CanvasEditor = () => {
                       onDelete={() => {}}
                       onSelect={() => {}}
                       isPreviewMode={true}
+                      project={project}
                     />
                   </Box>
                 ))}

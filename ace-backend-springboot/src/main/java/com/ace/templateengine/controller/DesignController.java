@@ -2,6 +2,7 @@ package com.ace.templateengine.controller;
 
 import com.ace.templateengine.model.Design;
 import com.ace.templateengine.dto.DesignRequestDTO;
+import com.ace.templateengine.dto.DesignStats;
 import com.ace.templateengine.service.DesignService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -313,8 +314,8 @@ public class DesignController {
         description = "Retrieves overall design statistics"
     )
     @GetMapping("/stats")
-    public ResponseEntity<DesignService.DesignStats> getDesignStats() {
-        DesignService.DesignStats stats = designService.getDesignStats();
+    public ResponseEntity<DesignStats> getDesignStats() {
+        DesignStats stats = designService.getDesignStats();
         return ResponseEntity.ok(stats);
     }
 
@@ -323,10 +324,10 @@ public class DesignController {
         description = "Retrieves design statistics for a specific user"
     )
     @GetMapping("/stats/user/{createdBy}")
-    public ResponseEntity<DesignService.DesignStats> getDesignStatsByUser(
+    public ResponseEntity<DesignStats> getDesignStatsByUser(
             @Parameter(description = "Creator username") @PathVariable String createdBy) {
         
-        DesignService.DesignStats stats = designService.getDesignStatsByUser(createdBy);
+        DesignStats stats = designService.getDesignStatsByUser(createdBy);
         return ResponseEntity.ok(stats);
     }
 

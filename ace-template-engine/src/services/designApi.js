@@ -123,7 +123,8 @@ class DesignApiService {
         zoomLevel: 100,
         showGrid: true,
       },
-      status: designData.status || 'DRAFT',
+      // Preserve existing status if not explicitly provided
+      ...(designData.status && { status: designData.status }),
     };
     
     // Test JSON serialization

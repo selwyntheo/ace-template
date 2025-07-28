@@ -369,14 +369,24 @@ const EnhancedTableComponent = ({
     };
   }, [advancedOptions.autoRefresh, advancedOptions.refreshInterval, executeQuery]);
 
-  // Update component properties when data state changes (separate from executeQuery)
+  // Update component properties when data state changes (with debouncing to prevent loops)
+  const configUpdateTimeoutRef = useRef(null);
+  
   useEffect(() => {
-    if (onPropertyChange) {
+    if (!onPropertyChange) return;
+    
+    // Clear existing timeout
+    if (configUpdateTimeoutRef.current) {
+      clearTimeout(configUpdateTimeoutRef.current);
+    }
+    
+    // Debounce the config update to prevent rapid changes
+    configUpdateTimeoutRef.current = setTimeout(() => {
       const configToSave = {
         ...component?.properties,
         dataConfig: {
           source: dataState.source,
-          query: dataState.query, // Make sure query is saved
+          query: dataState.query,
           results: dataState.results,
           columns: dataState.columns,
           availableColumns: dataState.availableColumns,
@@ -391,10 +401,22 @@ const EnhancedTableComponent = ({
         columnConfigs: columnConfigs
       };
       
-      console.log('Saving table configuration:', configToSave.dataConfig);
-      onPropertyChange('properties', configToSave);
-    }
-  }, [dataState, advancedOptions, columnConfigs, onPropertyChange, component?.properties]);
+      // Only update if there are actual changes
+      const currentConfig = component?.properties?.dataConfig;
+      const hasChanges = JSON.stringify(currentConfig) !== JSON.stringify(configToSave.dataConfig);
+      
+      if (hasChanges) {
+        console.log('Saving table configuration:', configToSave.dataConfig);
+        onPropertyChange('properties', configToSave);
+      }
+    }, 500); // 500ms debounce
+    
+    return () => {
+      if (configUpdateTimeoutRef.current) {
+        clearTimeout(configUpdateTimeoutRef.current);
+      }
+    };
+  }, [dataState, advancedOptions, columnConfigs, component?.id]); // Use component.id instead of properties
 
   // Fetch data from MongoDB collections using generic API
   const fetchCollectionData = async (collectionName) => {

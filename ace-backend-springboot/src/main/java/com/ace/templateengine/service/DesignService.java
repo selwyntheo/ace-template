@@ -4,6 +4,7 @@ import com.ace.templateengine.model.Design;
 import com.ace.templateengine.repository.DesignRepository;
 import com.ace.templateengine.exception.DesignNotFoundException;
 import com.ace.templateengine.exception.DuplicateDesignNameException;
+import com.ace.templateengine.dto.DesignStats;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -88,6 +89,9 @@ public class DesignService {
             throw new DuplicateDesignNameException("Design with name '" + updatedDesign.getName() + "' already exists for this user");
         }
         
+        // Check if this is a significant update that warrants version increment
+        boolean isSignificantChange = hasSignificantChanges(existingDesign, updatedDesign);
+        
         // Update fields
         existingDesign.setName(updatedDesign.getName());
         existingDesign.setDescription(updatedDesign.getDescription());
@@ -96,8 +100,25 @@ public class DesignService {
         existingDesign.setGlobalStyles(updatedDesign.getGlobalStyles());
         existingDesign.setThemeSettings(updatedDesign.getThemeSettings());
         existingDesign.setMetadata(updatedDesign.getMetadata());
-        existingDesign.setVersion(updatedDesign.getVersion());
-        existingDesign.setStatus(updatedDesign.getStatus());
+        
+        // Handle version increment for significant changes
+        if (isSignificantChange) {
+            existingDesign.setVersion(incrementVersion(existingDesign.getVersion()));
+        } else if (updatedDesign.getVersion() != null) {
+            existingDesign.setVersion(updatedDesign.getVersion());
+        }
+        
+        // Handle status changes
+        if (updatedDesign.getStatus() != null) {
+            Design.DesignStatus oldStatus = existingDesign.getStatus();
+            existingDesign.setStatus(updatedDesign.getStatus());
+            
+            // Increment version when publishing
+            if (oldStatus != Design.DesignStatus.PUBLISHED && updatedDesign.getStatus() == Design.DesignStatus.PUBLISHED) {
+                existingDesign.setVersion(incrementVersion(existingDesign.getVersion()));
+            }
+        }
+        
         existingDesign.setTags(updatedDesign.getTags());
         existingDesign.setUpdatedBy(updatedDesign.getUpdatedBy());
         existingDesign.setIsPublic(updatedDesign.getIsPublic());
@@ -272,20 +293,49 @@ public class DesignService {
         return stats;
     }
     
-    // Inner class for design statistics
-    public static class DesignStats {
-        private long totalDesigns;
-        private long publicDesigns;
-        private long privateDesigns;
+    // Helper method to increment version numbers
+    private String incrementVersion(String currentVersion) {
+        if (currentVersion == null || currentVersion.isEmpty()) {
+            return "1.0.0";
+        }
         
-        // Getters and setters
-        public long getTotalDesigns() { return totalDesigns; }
-        public void setTotalDesigns(long totalDesigns) { this.totalDesigns = totalDesigns; }
+        String[] parts = currentVersion.split("\\.");
+        if (parts.length != 3) {
+            return "1.0.0";
+        }
         
-        public long getPublicDesigns() { return publicDesigns; }
-        public void setPublicDesigns(long publicDesigns) { this.publicDesigns = publicDesigns; }
+        try {
+            int major = Integer.parseInt(parts[0]);
+            int minor = Integer.parseInt(parts[1]);
+            int patch = Integer.parseInt(parts[2]);
+            
+            // Increment patch version for regular updates
+            patch++;
+            
+            return String.format("%d.%d.%d", major, minor, patch);
+        } catch (NumberFormatException e) {
+            return "1.0.0";
+        }
+    }
+    
+    // Helper method to determine if changes are significant enough to warrant version increment
+    private boolean hasSignificantChanges(Design existing, Design updated) {
+        // Check if components have changed (significant structural change)
+        if (!java.util.Objects.equals(existing.getComponents(), updated.getComponents())) {
+            return true;
+        }
         
-        public long getPrivateDesigns() { return privateDesigns; }
-        public void setPrivateDesigns(long privateDesigns) { this.privateDesigns = privateDesigns; }
+        // Check if canvas configuration has changed significantly
+        if (!java.util.Objects.equals(existing.getCanvasConfig(), updated.getCanvasConfig())) {
+            return true;
+        }
+        
+        // Check if name has changed (significant identity change)
+        if (!java.util.Objects.equals(existing.getName(), updated.getName())) {
+            return true;
+        }
+        
+        // Description changes are not considered significant
+        return false;
     }
 }
