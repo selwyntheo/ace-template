@@ -30,7 +30,11 @@ import {
   Stack,
   Accordion,
   AccordionSummary,
-  AccordionDetails
+  AccordionDetails,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction
 } from '@mui/material';
 import {
   PlayArrow,
@@ -102,6 +106,14 @@ const TableConfigurationPanel = ({
   const [queryValidation, setQueryValidation] = useState({ isValid: true, error: null });
   const [activeTab, setActiveTab] = useState(0);
 
+  // Custom Query Management States
+  const [savedQueries, setSavedQueries] = useState([]);
+  const [queryName, setQueryName] = useState('');
+  const [saveQueryDialog, setSaveQueryDialog] = useState(false);
+  const [loadQueryDialog, setLoadQueryDialog] = useState(false);
+  const [customQueryDialog, setCustomQueryDialog] = useState(false);
+  const [queryHistory, setQueryHistory] = useState([]);
+
   // ===== DATA SOURCES CONFIGURATION =====
   const dataSources = [
     { 
@@ -154,10 +166,17 @@ const TableConfigurationPanel = ({
       useGenericApi: false
     },
     { 
+      value: 'custom_query', 
+      label: 'Custom MongoDB Query', 
+      endpoint: '/custom',
+      description: 'Execute custom MongoDB queries with JSON syntax',
+      useGenericApi: false
+    },
+    { 
       value: 'mongodb_query', 
-      label: 'MongoDB Query', 
+      label: 'MongoDB Query Builder', 
       endpoint: '/mongo/query',
-      description: 'Execute native MongoDB queries',
+      description: 'Execute native MongoDB queries with builder interface',
       useGenericApi: true
     }
   ];
@@ -258,6 +277,28 @@ const TableConfigurationPanel = ({
     }
   }, [componentId, designId]); // Only depend on stable IDs
 
+  // Load saved custom queries from the design collection on component mount
+  useEffect(() => {
+    const loadSavedQueries = async () => {
+      if (designId) {
+        try {
+          const design = await designApi.getDesign(designId);
+          if (design?.customQueries) {
+            setSavedQueries(design.customQueries);
+          }
+          // Also load query history if available
+          if (design?.queryHistory) {
+            setQueryHistory(design.queryHistory);
+          }
+        } catch (error) {
+          console.error('Failed to load saved queries:', error);
+        }
+      }
+    };
+    
+    loadSavedQueries();
+  }, [designId]);
+
   // ===== SAVE CONFIGURATION =====
   const saveConfiguration = useCallback(async () => {
     try {
@@ -347,6 +388,8 @@ const TableConfigurationPanel = ({
       
       if (dataState.source === 'mongodb_query' && mongoQueryTemplate) {
         results = await executeMongoQuery(mongoQueryTemplate);
+      } else if ((dataState.source === 'custom_query' || dataState.source === 'custom') && dataState.query) {
+        results = await executeCustomQuery(dataState.query);
       } else {
         results = await fetchCollectionData(dataState.source);
       }
@@ -456,6 +499,29 @@ const TableConfigurationPanel = ({
     }
   };
 
+  // Execute custom query (supports both MongoDB JSON queries and other formats)
+  const executeCustomQuery = async (query) => {
+    try {
+      // First try to parse as MongoDB JSON query
+      try {
+        const parsedQuery = JSON.parse(query);
+        if (parsedQuery.collection) {
+          // It's a MongoDB query - delegate to executeMongoQuery
+          return await executeMongoQuery(query);
+        }
+      } catch (e) {
+        // Not valid JSON, might be other query format
+      }
+
+      // For non-MongoDB queries, you can add other query execution logic here
+      // For now, we'll treat all custom queries as MongoDB queries
+      throw new Error('Custom query must be a valid MongoDB JSON query with a "collection" field');
+    } catch (error) {
+      console.error('Custom query execution error:', error);
+      throw error;
+    }
+  };
+
   const generateColumns = (sampleRow) => {
     return Object.keys(sampleRow).map(key => ({
       field: key,
@@ -491,7 +557,7 @@ const TableConfigurationPanel = ({
     setDataState(prev => ({
       ...prev,
       source: newSource,
-      query: '',
+      query: (newSource === 'custom_query' || newSource === 'custom') ? '' : '',
       results: [],
       columns: [],
       error: null
@@ -516,6 +582,147 @@ const TableConfigurationPanel = ({
       }));
       setMongoQueryEditorDialog(false);
     }
+  };
+
+  // ===== CUSTOM QUERY MANAGEMENT =====
+  // Save custom query to design collection
+  const saveCustomQuery = async () => {
+    try {
+      if (!queryName.trim()) {
+        throw new Error('Query name is required');
+      }
+      
+      if (!dataState.query.trim()) {
+        throw new Error('Query content is required');
+      }
+
+      const newQuery = {
+        id: `query_${Date.now()}`,
+        name: queryName,
+        query: dataState.query,
+        queryType: dataState.source,
+        description: `${dataState.source} query: ${queryName}`,
+        createdAt: new Date().toISOString(),
+        lastUsed: new Date().toISOString()
+      };
+
+      // Add to local state
+      const updatedQueries = [...savedQueries, newQuery];
+      setSavedQueries(updatedQueries);
+
+      // Save to design collection
+      if (designId) {
+        const currentDesign = await designApi.getDesign(designId);
+        await designApi.updateDesign(designId, {
+          ...currentDesign,
+          customQueries: updatedQueries,
+          queryHistory: queryHistory
+        });
+      }
+
+      // Add to query history
+      saveQueryToHistory(dataState.query, dataState.source);
+
+      // Reset dialog state
+      setQueryName('');
+      setSaveQueryDialog(false);
+      
+      alert(`Query "${queryName}" saved successfully!`);
+    } catch (error) {
+      console.error('Failed to save query:', error);
+      alert(`Failed to save query: ${error.message}`);
+    }
+  };
+
+  // Load saved custom query
+  const loadSavedQuery = (savedQuery) => {
+    setDataState(prev => ({
+      ...prev,
+      query: savedQuery.query,
+      source: savedQuery.queryType
+    }));
+    
+    // Update last used timestamp
+    const updatedQueries = savedQueries.map(q => 
+      q.id === savedQuery.id 
+        ? { ...q, lastUsed: new Date().toISOString() }
+        : q
+    );
+    setSavedQueries(updatedQueries);
+    
+    // Save updated timestamps to design
+    if (designId) {
+      designApi.getDesign(designId).then(currentDesign => {
+        designApi.updateDesign(designId, {
+          ...currentDesign,
+          customQueries: updatedQueries
+        });
+      }).catch(console.error);
+    }
+    
+    setLoadQueryDialog(false);
+  };
+
+  // Delete saved custom query
+  const deleteSavedQuery = async (queryId) => {
+    try {
+      const updatedQueries = savedQueries.filter(q => q.id !== queryId);
+      setSavedQueries(updatedQueries);
+
+      // Update design collection
+      if (designId) {
+        const currentDesign = await designApi.getDesign(designId);
+        await designApi.updateDesign(designId, {
+          ...currentDesign,
+          customQueries: updatedQueries
+        });
+      }
+    } catch (error) {
+      console.error('Failed to delete query:', error);
+      alert(`Failed to delete query: ${error.message}`);
+    }
+  };
+
+  // Save query to history
+  const saveQueryToHistory = (query, queryType) => {
+    const historyEntry = {
+      id: Date.now(),
+      query,
+      queryType,
+      timestamp: new Date().toISOString(),
+      description: query.substring(0, 100) + (query.length > 100 ? '...' : '')
+    };
+    
+    const updatedHistory = [historyEntry, ...queryHistory.slice(0, 9)]; // Keep last 10 queries
+    setQueryHistory(updatedHistory);
+    
+    // Save to design collection
+    if (designId) {
+      designApi.getDesign(designId).then(currentDesign => {
+        designApi.updateDesign(designId, {
+          ...currentDesign,
+          queryHistory: updatedHistory
+        });
+      }).catch(console.error);
+    }
+  };
+
+  // Export queries as JSON
+  const exportQueries = () => {
+    const exportData = {
+      savedQueries,
+      queryHistory,
+      exportDate: new Date().toISOString(),
+      designId
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `custom-queries-${designId || 'export'}-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleSaveAndClose = async () => {
@@ -577,6 +784,38 @@ const TableConfigurationPanel = ({
           </Box>
         )}
 
+        {(dataState.source === 'custom_query' || dataState.source === 'custom') && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Custom Query
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={6}
+              variant="outlined"
+              value={dataState.query}
+              onChange={(e) => setDataState(prev => ({ ...prev, query: e.target.value }))}
+              placeholder="Enter your custom query here..."
+              sx={{
+                '& .MuiInputBase-input': {
+                  fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                  fontSize: '0.875rem'
+                }
+              }}
+            />
+            <Box sx={{ mt: 1, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                Query Examples:
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.75rem', mt: 1 }}>
+                • MongoDB: <code>{'{ "collection": "users", "query": { "status": "active" } }'}</code><br/>
+                • Aggregation: <code>{'{ "collection": "orders", "pipeline": [{ "$group": { "_id": "$status", "count": { "$sum": 1 } }}] }'}</code>
+              </Typography>
+            </Box>
+          </Box>
+        )}
+
         <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
           <Button
             variant="contained"
@@ -596,6 +835,69 @@ const TableConfigurationPanel = ({
             Refresh
           </Button>
         </Stack>
+
+        {/* Custom Query Management */}
+        {(dataState.source === 'custom' || dataState.source === 'custom_query' || dataState.source === 'mongodb_query' || dataState.source === 'sql_query') && (
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Custom Query Management
+            </Typography>
+            <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setSaveQueryDialog(true)}
+                disabled={!dataState.query.trim()}
+              >
+                Save Query
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setLoadQueryDialog(true)}
+                disabled={savedQueries.length === 0}
+              >
+                Load Query
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setCustomQueryDialog(true)}
+              >
+                Query Editor
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={exportQueries}
+                disabled={savedQueries.length === 0}
+              >
+                Export Queries
+              </Button>
+            </Stack>
+            
+            {dataState.query && (
+              <Box sx={{ mt: 1, p: 1, bgcolor: 'grey.100', borderRadius: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Current Query:
+                </Typography>
+                <Typography variant="body2" component="pre" sx={{ 
+                  fontSize: '0.75rem', 
+                  mt: 0.5, 
+                  fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                  maxHeight: 100,
+                  overflow: 'auto'
+                }}>
+                  {dataState.query}
+                </Typography>
+              </Box>
+            )}
+            
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              {savedQueries.length} saved queries available
+            </Typography>
+          </Box>
+        )}
 
         {dataState.error && (
           <Alert severity="error" sx={{ mt: 2 }}>
@@ -930,6 +1232,168 @@ const TableConfigurationPanel = ({
 
       {/* Dialogs */}
       {renderMongoQueryEditor()}
+
+      {/* Save Query Dialog */}
+      <Dialog open={saveQueryDialog} onClose={() => setSaveQueryDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Save Custom Query</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Query Name"
+            fullWidth
+            variant="outlined"
+            value={queryName}
+            onChange={(e) => setQueryName(e.target.value)}
+            placeholder="Enter a descriptive name for this query"
+            sx={{ mb: 2 }}
+          />
+          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+            <Typography variant="caption" color="text.secondary" gutterBottom>
+              Query to Save:
+            </Typography>
+            <Typography variant="body2" component="pre" sx={{ 
+              fontSize: '0.75rem', 
+              fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+              maxHeight: 200,
+              overflow: 'auto',
+              mt: 1
+            }}>
+              {dataState.query}
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSaveQueryDialog(false)}>Cancel</Button>
+          <Button 
+            onClick={saveCustomQuery} 
+            variant="contained"
+            disabled={!queryName.trim()}
+          >
+            Save Query
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Load Query Dialog */}
+      <Dialog open={loadQueryDialog} onClose={() => setLoadQueryDialog(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Load Saved Query</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Select a saved query to load into the current configuration:
+          </Typography>
+          <List sx={{ maxHeight: 400, overflow: 'auto' }}>
+            {savedQueries.map((query) => (
+              <ListItem key={query.id} divider>
+                <ListItemText
+                  primary={query.name}
+                  secondary={
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Created: {new Date(query.createdAt).toLocaleString()}
+                      </Typography>
+                      {query.lastUsed && (
+                        <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
+                          Last used: {new Date(query.lastUsed).toLocaleString()}
+                        </Typography>
+                      )}
+                      <Typography variant="body2" component="pre" sx={{ 
+                        fontSize: '0.7rem', 
+                        fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                        mt: 0.5,
+                        maxHeight: 80,
+                        overflow: 'auto',
+                        bgcolor: 'grey.100',
+                        p: 0.5,
+                        borderRadius: 0.5
+                      }}>
+                        {query.query}
+                      </Typography>
+                    </Box>
+                  }
+                />
+                <ListItemSecondaryAction>
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => loadSavedQuery(query)}
+                    >
+                      Load
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="error"
+                      onClick={() => deleteSavedQuery(query.id)}
+                    >
+                      Delete
+                    </Button>
+                  </Stack>
+                </ListItemSecondaryAction>
+              </ListItem>
+            ))}
+          </List>
+          {savedQueries.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+              No saved queries available. Save your first custom query to get started.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLoadQueryDialog(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Custom Query Editor Dialog */}
+      <Dialog open={customQueryDialog} onClose={() => setCustomQueryDialog(false)} maxWidth="lg" fullWidth>
+        <DialogTitle>Custom Query Editor</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Write your custom query below. This will replace the current query configuration.
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={12}
+              variant="outlined"
+              value={dataState.query}
+              onChange={(e) => setDataState(prev => ({ ...prev, query: e.target.value }))}
+              placeholder="Enter your custom query here..."
+              sx={{
+                '& .MuiInputBase-input': {
+                  fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                  fontSize: '0.875rem'
+                }
+              }}
+            />
+          </Box>
+          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+            <Typography variant="caption" color="text.secondary">
+              Query Examples:
+            </Typography>
+            <Typography variant="body2" sx={{ fontSize: '0.75rem', mt: 1 }}>
+              • MongoDB: <code>{'[{ "$match": { "status": "active" } }, { "$sort": { "date": -1 } }]'}</code><br/>
+              • SQL: <code>SELECT * FROM users WHERE active = 1 ORDER BY created_at DESC</code><br/>
+              • API: <code>{'{ "endpoint": "/api/data", "params": { "limit": 100 } }'}</code>
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCustomQueryDialog(false)}>Cancel</Button>
+          <Button 
+            onClick={() => {
+              setCustomQueryDialog(false);
+              executeQuery();
+            }} 
+            variant="contained"
+            disabled={!dataState.query.trim()}
+          >
+            Apply & Execute
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Save Confirmation Dialog */}
       <Dialog open={saveDialog} onClose={() => setSaveDialog(false)}>
