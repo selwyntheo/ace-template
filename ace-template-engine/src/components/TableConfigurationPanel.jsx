@@ -282,7 +282,7 @@ const TableConfigurationPanel = ({
     const loadSavedQueries = async () => {
       if (designId) {
         try {
-          const design = await designApi.getDesign(designId);
+          const design = await designApi.getDesignById(designId);
           if (design?.customQueries) {
             setSavedQueries(design.customQueries);
           }
