@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -59,7 +59,7 @@ const EnhancedTableComponent = ({
   onSave,
   onReload 
 }) => {
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState(isEditMode ? 0 : 1); // Start with Preview tab in view mode, Setup tab in edit mode
   const [dataState, setDataState] = useState({
     source: 'projects',
     query: '',
@@ -74,6 +74,8 @@ const EnhancedTableComponent = ({
     page: 0,
     pageSize: 10
   });
+
+  const dataStateRef = useRef(dataState);
 
   const [queryDialog, setQueryDialog] = useState(false);
   const [saveDialog, setSaveDialog] = useState(false);
@@ -177,42 +179,10 @@ const EnhancedTableComponent = ({
     }
   ];
 
-  // Initialize component data from saved configuration
+  // Keep ref updated with current dataState
   useEffect(() => {
-    if (component?.properties?.dataConfig) {
-      setDataState(prev => ({
-        ...prev,
-        ...component.properties.dataConfig
-      }));
-    }
-    if (component?.properties?.advancedOptions) {
-      setAdvancedOptions(prev => ({
-        ...prev,
-        ...component.properties.advancedOptions
-      }));
-    }
-  }, [component]);
-
-  // Auto-load data in preview mode
-  useEffect(() => {
-    if (!isEditMode && component?.properties?.dataConfig) {
-      // In preview mode, automatically execute the saved query
-      executeQuery();
-    }
-  }, [isEditMode, component?.properties?.dataConfig]);
-
-  // Auto-refresh functionality
-  useEffect(() => {
-    let interval;
-    if (advancedOptions.autoRefresh && advancedOptions.refreshInterval > 0) {
-      interval = setInterval(() => {
-        executeQuery();
-      }, advancedOptions.refreshInterval);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [advancedOptions.autoRefresh, advancedOptions.refreshInterval]);
+    dataStateRef.current = dataState;
+  }, [dataState]);
 
   // Execute query against backend
   const executeQuery = useCallback(async () => {
@@ -223,7 +193,7 @@ const EnhancedTableComponent = ({
       let columns = [];
       
       // Get current state values at execution time
-      const currentDataState = dataState;
+      const currentDataState = dataStateRef.current;
       
       switch (currentDataState.source) {
         case 'projects':
@@ -274,9 +244,18 @@ const EnhancedTableComponent = ({
           throw new Error(`Unsupported data source: ${currentDataState.source}`);
       }
 
-      // Deduplicate results to prevent duplicate keys
+      // Deduplicate results to prevent duplicate keys, but preserve version differences
       const uniqueResults = results.filter((row, index, self) => {
-        // Try to find a unique identifier for each row
+        // For projects with versions, include version in uniqueness check
+        if (currentDataState.source === 'projects' && row.version) {
+          const rowIdentifier = `${row.id || row._id}_v${row.version}`;
+          return index === self.findIndex(r => {
+            const rIdentifier = `${r.id || r._id}_v${r.version}`;
+            return rIdentifier === rowIdentifier;
+          });
+        }
+        
+        // For other data sources, use standard deduplication
         const rowId = row.id || row._id || JSON.stringify(row);
         return index === self.findIndex(r => {
           const rId = r.id || r._id || JSON.stringify(r);
@@ -303,22 +282,119 @@ const EnhancedTableComponent = ({
         error: error.message
       }));
     }
-  }, [dataState]);
+  }, []); // Remove dataState dependency to avoid circular dependency
+
+  // Initialize component data from saved configuration
+  useEffect(() => {
+    if (component?.properties?.dataConfig) {
+      console.log('Initializing table with saved config:', component.properties.dataConfig);
+      setDataState(prev => ({
+        ...prev,
+        source: component.properties.dataConfig.source || prev.source,
+        query: component.properties.dataConfig.query || prev.query, // Ensure query is restored
+        results: component.properties.dataConfig.results || prev.results,
+        columns: component.properties.dataConfig.columns || prev.columns,
+        availableColumns: component.properties.dataConfig.availableColumns || prev.availableColumns,
+        selectedColumns: component.properties.dataConfig.selectedColumns || prev.selectedColumns,
+        lastFetched: component.properties.dataConfig.lastFetched || prev.lastFetched,
+        totalRows: component.properties.dataConfig.totalRows || prev.totalRows,
+        page: component.properties.dataConfig.page || prev.page,
+        pageSize: component.properties.dataConfig.pageSize || prev.pageSize,
+        // Preserve loading and error state from current state
+        loading: prev.loading,
+        error: component.properties.dataConfig.error || prev.error
+      }));
+    }
+    if (component?.properties?.advancedOptions) {
+      setAdvancedOptions(prev => ({
+        ...prev,
+        ...component.properties.advancedOptions
+      }));
+    }
+    if (component?.properties?.columnConfigs) {
+      setColumnConfigs(component.properties.columnConfigs);
+    }
+  }, [component]);
+
+  // Auto-load data in preview mode - prioritize executing fresh queries for better UX
+  useEffect(() => {
+    if (!isEditMode && component?.properties?.dataConfig) {
+      const savedConfig = component.properties.dataConfig;
+      
+      console.log('Preview mode - initializing with config:', savedConfig);
+      
+      // Always try to execute fresh query in preview mode for up-to-date data
+      if (savedConfig.source) {
+        // First set the saved configuration
+        setDataState(prev => ({
+          ...prev,
+          source: savedConfig.source,
+          query: savedConfig.query || '',
+          selectedColumns: savedConfig.selectedColumns || [],
+          availableColumns: savedConfig.availableColumns || [],
+          columns: savedConfig.columns || []
+        }));
+        
+        // Then execute query for fresh data (with a small delay to ensure state is set)
+        setTimeout(() => {
+          console.log('Executing fresh query in preview mode for source:', savedConfig.source);
+          executeQuery();
+        }, 200);
+      } else if (savedConfig.results && savedConfig.results.length > 0) {
+        // Fallback to saved results if no source is configured
+        console.log('Using saved results as fallback in preview mode:', savedConfig.results.length, 'rows');
+        setDataState(prev => ({
+          ...prev,
+          results: savedConfig.results,
+          columns: savedConfig.columns || [],
+          availableColumns: savedConfig.availableColumns || [],
+          selectedColumns: savedConfig.selectedColumns || []
+        }));
+      }
+    }
+  }, [isEditMode, component?.properties?.dataConfig, executeQuery]);
+
+  // Auto-refresh functionality
+  useEffect(() => {
+    let interval;
+    if (advancedOptions.autoRefresh && advancedOptions.refreshInterval > 0) {
+      interval = setInterval(() => {
+        // Use a reference to avoid circular dependency
+        const currentExecuteQuery = executeQuery;
+        currentExecuteQuery();
+      }, advancedOptions.refreshInterval);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [advancedOptions.autoRefresh, advancedOptions.refreshInterval, executeQuery]);
 
   // Update component properties when data state changes (separate from executeQuery)
   useEffect(() => {
-    if (onPropertyChange && dataState.results.length > 0) {
-      onPropertyChange('properties', {
+    if (onPropertyChange) {
+      const configToSave = {
         ...component?.properties,
         dataConfig: {
           source: dataState.source,
-          query: dataState.query,
+          query: dataState.query, // Make sure query is saved
+          results: dataState.results,
+          columns: dataState.columns,
+          availableColumns: dataState.availableColumns,
+          selectedColumns: dataState.selectedColumns,
           lastFetched: dataState.lastFetched,
-          totalRows: dataState.totalRows
-        }
-      });
+          totalRows: dataState.totalRows,
+          page: dataState.page,
+          pageSize: dataState.pageSize,
+          error: dataState.error
+        },
+        advancedOptions: advancedOptions,
+        columnConfigs: columnConfigs
+      };
+      
+      console.log('Saving table configuration:', configToSave.dataConfig);
+      onPropertyChange('properties', configToSave);
     }
-  }, [dataState.results, dataState.source, dataState.query, dataState.lastFetched, dataState.totalRows, onPropertyChange, component?.properties]);
+  }, [dataState, advancedOptions, columnConfigs, onPropertyChange, component?.properties]);
 
   // Fetch data from MongoDB collections using generic API
   const fetchCollectionData = async (collectionName) => {
@@ -1156,166 +1232,115 @@ ORDER BY totalAssets DESC`;
     </Box>
   );
 
-  // Render data preview tab
+  // Render data preview tab - Clean preview without configuration controls
   const renderDataPreview = () => (
-    <Box sx={{ p: isEditMode ? 2 : 0, height: isEditMode ? 400 : 'auto' }}>
+    <Box sx={{ p: isEditMode ? 2 : 0 }}>
       {dataState.error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {dataState.error}
         </Alert>
       )}
       
-      {isEditMode && dataState.results.length > 0 && (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          💡 <strong>Editing Enabled:</strong> Double-click cells in Name, Description, Label, Placeholder, Title, and Text columns to edit values. Changes are automatically saved to the backend.
-        </Alert>
+      {/* Show loading indicator */}
+      {dataState.loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+          <CircularProgress />
+          <Typography sx={{ ml: 2 }}>Loading data...</Typography>
+        </Box>
       )}
       
-      {dataState.results.length > 0 ? (
+      {/* Show data table if results are available */}
+      {!dataState.loading && dataState.results.length > 0 && (
         <Box>
-          {/* Column Selection Controls - Only show in edit mode */}
-          {isEditMode && advancedOptions.columnSelection && dataState.availableColumns.length > 0 && (
-            <Box sx={{ mb: 2, p: 2, bgcolor: 'rgba(43, 156, 174, 0.05)', borderRadius: 1, border: '1px solid rgba(43, 156, 174, 0.15)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <ViewColumn fontSize="small" />
-                  Column Selection ({dataState.selectedColumns.length} of {dataState.availableColumns.length})
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button
-                    size="small"
-                    startIcon={<SelectAll />}
-                    onClick={() => handleSelectAllColumns(true)}
-                    disabled={dataState.selectedColumns.length === dataState.availableColumns.length}
-                  >
-                    Select All
-                  </Button>
-                  <Button
-                    size="small"
-                    startIcon={<CheckBoxOutlineBlank />}
-                    onClick={() => handleSelectAllColumns(false)}
-                    disabled={dataState.selectedColumns.length === 0}
-                  >
-                    Clear All
-                  </Button>
-                  <Switch
-                    checked={advancedOptions.showAllColumns}
-                    onChange={(e) => setAdvancedOptions(prev => ({ 
-                      ...prev, 
-                      showAllColumns: e.target.checked 
-                    }))}
-                    size="small"
-                  />
-                  <Typography variant="caption">Show All</Typography>
-                </Box>
-              </Box>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {dataState.availableColumns.map((column) => (
-                  <Box
-                    key={column.field}
-                    sx={{ 
-                      bgcolor: dataState.selectedColumns.includes(column.field) ? 'rgba(43, 156, 174, 0.12)' : 'white',
-                      px: 1,
-                      py: 0.5,
-                      borderRadius: 1,
-                      border: '1px solid',
-                      borderColor: dataState.selectedColumns.includes(column.field) ? 'rgba(43, 156, 174, 0.4)' : 'rgba(203, 213, 224, 0.6)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5
-                    }}
-                  >
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={dataState.selectedColumns.includes(column.field)}
-                          onChange={(e) => handleColumnSelection(column.field, e.target.checked)}
-                          size="small"
-                        />
-                      }
-                      label={columnConfigs[column.field]?.displayName || column.headerName}
-                      sx={{ 
-                        m: 0,
-                        '& .MuiTypography-root': {
-                          fontSize: '0.75rem'
-                        }
-                      }}
-                    />
-                    <Tooltip title="Configure Column">
-                      <IconButton 
-                        size="small"
-                        onClick={() => openColumnConfig(column)}
-                        sx={{ p: 0.25 }}
-                      >
-                        <Settings fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                ))}
-              </Box>
+          {/* Info bar - only show in edit mode */}
+          {isEditMode && (
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                Showing {dataState.results.length} rows from {dataState.source}
+                {dataState.lastFetched && ` • Last updated: ${new Date(dataState.lastFetched).toLocaleString()}`}
+              </Typography>
+              <Button
+                size="small"
+                startIcon={<Refresh />}
+                onClick={executeQuery}
+                disabled={dataState.loading}
+              >
+                Refresh
+              </Button>
             </Box>
           )}
           
+          {/* Clean data table without configuration controls */}
           <DataGrid
             rows={dataState.results}
             columns={getDisplayColumns()}
             pageSize={dataState.pageSize}
             loading={dataState.loading}
-          getRowId={(row, index) => {
-            // Ensure index is defined
-            const safeIndex = index !== undefined ? index : Math.random().toString(36).substr(2, 9);
-            
-            // First priority: standard id field
-            if (row.id) return `id_${row.id}`;
-            
-            // Second priority: MongoDB _id field
-            if (row._id) {
-              // Handle MongoDB ObjectId (could be string or object)
-              if (typeof row._id === 'string') return `oid_${row._id}`;
-              if (row._id.$oid) return `oid_${row._id.$oid}`;
-              if (row._id.timestamp) {
-                // Combine timestamp with other unique identifiers to avoid duplicates
-                const timestamp = row._id.timestamp.toString();
-                const dateStr = row._id.date ? row._id.date.toString() : 'nodate';
-                return `ts_${timestamp}_${dateStr}_${safeIndex}`;
+            getRowId={(row, index) => {
+              // Ensure index is defined
+              const safeIndex = index !== undefined ? index : Math.random().toString(36).substr(2, 9);
+              
+              // First priority: standard id field
+              if (row.id) return `id_${row.id}`;
+              
+              // Second priority: MongoDB _id field
+              if (row._id) {
+                // Handle MongoDB ObjectId (could be string or object)
+                if (typeof row._id === 'string') return `oid_${row._id}`;
+                if (row._id.$oid) return `oid_${row._id.$oid}`;
+                if (row._id.timestamp) {
+                  // Combine timestamp with other unique identifiers to avoid duplicates
+                  const timestamp = row._id.timestamp.toString();
+                  const dateStr = row._id.date ? row._id.date.toString() : 'nodate';
+                  return `ts_${timestamp}_${dateStr}_${safeIndex}`;
+                }
+                return `obj_${JSON.stringify(row._id)}_${safeIndex}`;
               }
-              return `obj_${JSON.stringify(row._id)}_${safeIndex}`;
+              
+              // Third priority: business key (like fund_code)
+              if (row.fund_code) return `fund_${row.fund_code}_${safeIndex}`;
+              
+              // Fourth priority: combination of available fields
+              const keys = Object.keys(row);
+              if (keys.length > 0) {
+                const firstValue = row[keys[0]];
+                return `field_${keys[0]}_${firstValue}_${safeIndex}`;
+              }
+              
+              // Last resort: index-based ID
+              return `row_${safeIndex}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+            }}
+            checkboxSelection={isEditMode && advancedOptions.rowSelection === 'multiple'}
+            disableSelectionOnClick={!isEditMode}
+            sortingOrder={['desc', 'asc']}
+            pagination
+            pageSizeOptions={[5, 10, 25, 50]}
+            onPageSizeChange={(newPageSize) => 
+              setDataState(prev => ({ ...prev, pageSize: newPageSize }))
             }
-            
-            // Third priority: business key (like fund_code)
-            if (row.fund_code) return `fund_${row.fund_code}_${safeIndex}`;
-            
-            // Fourth priority: combination of available fields
-            const keys = Object.keys(row);
-            if (keys.length > 0) {
-              const firstValue = row[keys[0]];
-              return `field_${keys[0]}_${firstValue}_${safeIndex}`;
-            }
-            
-            // Last resort: index-based ID
-            return `row_${safeIndex}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-          }}
-          checkboxSelection={isEditMode && advancedOptions.rowSelection === 'multiple'}
-          disableSelectionOnClick={!isEditMode}
-          sortingOrder={['desc', 'asc']}
-          pagination
-          pageSizeOptions={[5, 10, 25, 50]}
-          onPageSizeChange={(newPageSize) => 
-            setDataState(prev => ({ ...prev, pageSize: newPageSize }))
-          }
-          processRowUpdate={isEditMode ? processRowUpdate : undefined}
-          onProcessRowUpdateError={isEditMode ? handleProcessRowUpdateError : undefined}
-          onCellEditCommit={isEditMode ? handleCellEditCommit : undefined}
-          experimentalFeatures={{ newEditingApi: isEditMode }}
-        />
-      </Box>
-      ) : (
+            processRowUpdate={isEditMode ? processRowUpdate : undefined}
+            onProcessRowUpdateError={isEditMode ? handleProcessRowUpdateError : undefined}
+            onCellEditCommit={isEditMode ? handleCellEditCommit : undefined}
+            experimentalFeatures={{ newEditingApi: isEditMode }}
+            sx={{
+              height: isEditMode ? 400 : 'auto',
+              minHeight: 300,
+              '& .MuiDataGrid-root': {
+                border: 'none'
+              }
+            }}
+          />
+        </Box>
+      )}
+      
+      {/* Show empty state if no data */}
+      {!dataState.loading && dataState.results.length === 0 && (
         <Box sx={{ 
           display: 'flex', 
           flexDirection: 'column', 
           alignItems: 'center', 
           justifyContent: 'center',
-          height: '100%',
+          height: 300,
           bgcolor: 'rgba(43, 156, 174, 0.03)',
           borderRadius: 1,
           border: '1px solid rgba(43, 156, 174, 0.1)'
@@ -1324,103 +1349,187 @@ ORDER BY totalAssets DESC`;
           <Typography variant="h6" color="text.secondary">
             No Data Available
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Configure a data source and execute a query to see results
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', maxWidth: 400 }}>
+            {isEditMode 
+              ? "Configure a data source in the 'Table Setup' tab and execute a query to see results"
+              : "This table has no data to display"
+            }
           </Typography>
+          {isEditMode && dataState.source && !dataState.loading && (
+            <Button
+              variant="outlined"
+              startIcon={<PlayArrow />}
+              onClick={executeQuery}
+              sx={{ mt: 2 }}
+            >
+              Execute Query
+            </Button>
+          )}
         </Box>
       )}
     </Box>
   );
 
-  // Render column configuration tab
+  // Render column configuration tab - Better UX with table format
   const renderColumnConfig = () => (
     <Box sx={{ p: 2 }}>
-      <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <ViewColumn />
-        Column Configuration
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ViewColumn />
+          Column Configuration
+        </Typography>
+        
+        {dataState.availableColumns.length > 0 && (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              size="small"
+              startIcon={<SelectAll />}
+              onClick={() => handleSelectAllColumns(true)}
+              disabled={dataState.selectedColumns.length === dataState.availableColumns.length}
+            >
+              Show All
+            </Button>
+            <Button
+              size="small"
+              startIcon={<CheckBoxOutlineBlank />}
+              onClick={() => handleSelectAllColumns(false)}
+              disabled={dataState.selectedColumns.length === 0}
+            >
+              Hide All
+            </Button>
+          </Box>
+        )}
+      </Box>
       
       {dataState.availableColumns.length > 0 ? (
-        <Grid container spacing={2}>
-          {dataState.availableColumns.map((column) => {
-            const config = columnConfigs[column.field] || {};
-            const isConfigured = Object.keys(config).length > 0;
-            
-            return (
-              <Grid item xs={12} md={6} lg={4} key={column.field}>
-                <Card 
-                  variant="outlined" 
-                  sx={{ 
-                    position: 'relative',
-                    border: isConfigured ? '2px solid rgba(43, 156, 174, 0.3)' : '1px solid rgba(203, 213, 224, 0.6)',
-                    bgcolor: isConfigured ? 'rgba(43, 156, 174, 0.05)' : 'white'
-                  }}
-                >
-                  <CardContent sx={{ pb: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                        {config.displayName || column.headerName}
-                      </Typography>
-                      {isConfigured && (
-                        <Chip label="Configured" size="small" color="primary" />
-                      )}
-                    </Box>
-                    
-                    <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                      Field: {column.field}
-                    </Typography>
-                    
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="caption">
-                        Type: {config.dataType || column.type || 'string'} | 
-                        Width: {config.width || column.width || 150}px
-                        {config.formatter && ` | Format: ${config.formatter}`}
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
-                      {(config.sortable !== undefined ? config.sortable : column.sortable) && (
-                        <Chip label="Sortable" size="small" variant="outlined" />
-                      )}
-                      {(config.editable !== undefined ? config.editable : column.editable) && (
-                        <Chip label="Editable" size="small" variant="outlined" />
-                      )}
-                      {config.hidden && (
-                        <Chip label="Hidden" size="small" color="warning" variant="outlined" />
-                      )}
-                    </Box>
-                  </CardContent>
+        <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+          <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ backgroundColor: 'rgba(43, 156, 174, 0.08)' }}>
+                  <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600 }}>
+                    Visible
+                  </th>
+                  <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600 }}>
+                    Column
+                  </th>
+                  <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600 }}>
+                    Display Name
+                  </th>
+                  <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600 }}>
+                    Width
+                  </th>
+                  <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600 }}>
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {dataState.availableColumns.map((column, index) => {
+                  const config = columnConfigs[column.field] || {};
+                  const isVisible = dataState.selectedColumns.includes(column.field);
                   
-                  <CardActions sx={{ pt: 0, justifyContent: 'space-between' }}>
-                    <Button
-                      size="small"
-                      startIcon={<Settings />}
-                      onClick={() => openColumnConfig(column)}
+                  return (
+                    <tr 
+                      key={column.field}
+                      style={{ 
+                        borderBottom: '1px solid rgba(224, 224, 224, 0.5)',
+                        backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(250, 250, 250, 0.5)'
+                      }}
                     >
-                      Configure
-                    </Button>
-                    
-                    {isConfigured && (
-                      <Button
-                        size="small"
-                        color="warning"
-                        onClick={() => {
-                          setColumnConfigs(prev => {
-                            const newConfigs = { ...prev };
-                            delete newConfigs[column.field];
-                            return newConfigs;
-                          });
-                        }}
-                      >
-                        Reset
-                      </Button>
-                    )}
-                  </CardActions>
-                </Card>
-              </Grid>
-            );
-          })}
-        </Grid>
+                      <td style={{ padding: '8px' }}>
+                        <Checkbox
+                          checked={isVisible}
+                          onChange={(e) => handleColumnSelection(column.field, e.target.checked)}
+                          size="small"
+                        />
+                      </td>
+                      <td style={{ padding: '8px' }}>
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                          {column.field}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {column.type || 'string'}
+                        </Typography>
+                      </td>
+                      <td style={{ padding: '8px' }}>
+                        <TextField
+                          size="small"
+                          variant="outlined"
+                          value={config.displayName || column.headerName || column.field}
+                          onChange={(e) => {
+                            setColumnConfigs(prev => ({
+                              ...prev,
+                              [column.field]: {
+                                ...prev[column.field],
+                                displayName: e.target.value
+                              }
+                            }));
+                          }}
+                          sx={{ minWidth: 120 }}
+                        />
+                      </td>
+                      <td style={{ padding: '8px' }}>
+                        <TextField
+                          size="small"
+                          type="number"
+                          variant="outlined"
+                          value={config.width || column.width || 150}
+                          onChange={(e) => {
+                            setColumnConfigs(prev => ({
+                              ...prev,
+                              [column.field]: {
+                                ...prev[column.field],
+                                width: parseInt(e.target.value) || 150
+                              }
+                            }));
+                          }}
+                          sx={{ width: 80 }}
+                        />
+                      </td>
+                      <td style={{ padding: '8px' }}>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Tooltip title="Configure Column">
+                            <IconButton 
+                              size="small"
+                              onClick={() => openColumnConfig(column)}
+                            >
+                              <Settings fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          {Object.keys(config).length > 0 && (
+                            <Tooltip title="Reset Configuration">
+                              <IconButton 
+                                size="small"
+                                color="warning"
+                                onClick={() => {
+                                  setColumnConfigs(prev => {
+                                    const newConfigs = { ...prev };
+                                    delete newConfigs[column.field];
+                                    return newConfigs;
+                                  });
+                                }}
+                              >
+                                <Refresh fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </Box>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Box>
+          
+          <Box sx={{ p: 2, bgcolor: 'rgba(43, 156, 174, 0.03)', borderTop: '1px solid rgba(224, 224, 224, 0.5)' }}>
+            <Typography variant="body2" color="text.secondary">
+              <strong>{dataState.selectedColumns.length}</strong> of <strong>{dataState.availableColumns.length}</strong> columns visible
+              {dataState.selectedColumns.length === 0 && ' • No columns selected - table will be empty'}
+            </Typography>
+          </Box>
+        </Paper>
       ) : (
         <Box sx={{ 
           display: 'flex', 
@@ -1437,7 +1546,7 @@ ORDER BY totalAssets DESC`;
             No Columns Available
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Execute a query first to see column configuration options
+            Execute a query in 'Table Setup' to see column configuration options
           </Typography>
         </Box>
       )}
@@ -1563,9 +1672,9 @@ ORDER BY totalAssets DESC`;
             </Box>
 
             <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-              <Tab icon={<Settings />} label="Data Config" />
+              <Tab icon={<Settings />} label="Table Setup" />
               <Tab icon={<Visibility />} label="Preview" />
-              <Tab icon={<ViewColumn />} label="Columns" />
+              <Tab icon={<ViewColumn />} label="Column Config" />
               <Tab icon={<Code />} label="Advanced" />
             </Tabs>
 
