@@ -16,7 +16,9 @@ import {
   Autocomplete,
   TextField,
   FormControlLabel,
-  Switch as MuiSwitch
+  Switch as MuiSwitch,
+  Button as MuiButton,
+  IconButton
 } from '@mui/material';
 import {
   Dashboard,
@@ -45,7 +47,7 @@ import {
   ButtonSolid,
   ButtonOutline,
   ButtonText,
-  IconButton,
+  IconButton as UIIconButton,
   Input,
   PasswordInput,
   EmailInput,
@@ -66,17 +68,17 @@ import {
   Toggle,
   Select,
   MultiSelect,
-  ComboBox,
+  Combobox,
   NativeSelect,
-  AdvancedSelect,
+  GroupedSelect,
   Drawer,
   SidebarLayout,
   NavigationHeader,
   PageHeader,
-  AppBarHeader,
+  AppBar,
   Alert,
-  ToastAlert,
-  BannerAlert,
+  Toast,
+  InlineAlert,
   Spinner,
   ProgressBar,
   LoadingOverlay,
@@ -101,8 +103,8 @@ import {
 } from './index';
 
 import Accordion, { AccordionGroup, FAQAccordion, SettingsAccordion } from './Accordion';
-import SearchBox, { AdvancedSearchBox, SearchWithSuggestions, GlobalSearchBox } from './SearchBox';
-import Pagination, { AdvancedPagination, LoadMorePagination, TablePagination } from './Pagination';
+import SearchBox, { AdvancedSearchBox, SearchWithSuggestions } from './SearchBox';
+import Pagination, { AdvancedPagination, LoadMorePagination, TablePaginationComponent as TablePagination } from './Pagination';
 
 const AdvancedComponentLibrary = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -136,6 +138,59 @@ const AdvancedComponentLibrary = () => {
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState(null);
 
+  // Tab definitions
+  const tabs = [
+    'Buttons', 'Inputs', 'Modals', 'Cards', 'Form Controls', 
+    'Feedback', 'Navigation', 'Layout', 'Data Display'
+  ];
+
+  // Example data
+  const buttonExamples = [
+    {
+      component: Button,
+      label: 'Default Button',
+      props: { children: 'Default Button' }
+    },
+    {
+      component: ButtonSolid,
+      label: 'Solid Button',
+      props: { children: 'Solid Button', variant: 'primary' }
+    },
+    {
+      component: ButtonOutline,
+      label: 'Outline Button', 
+      props: { children: 'Outline Button' }
+    },
+    {
+      component: ButtonText,
+      label: 'Text Button',
+      props: { children: 'Text Button' }
+    }
+  ];
+
+  const inputExamples = [
+    {
+      component: Input,
+      label: 'Basic Input',
+      props: { label: 'Basic Input', placeholder: 'Enter text...' }
+    },
+    {
+      component: PasswordInput,
+      label: 'Password Input',
+      props: { label: 'Password', placeholder: 'Enter password...' }
+    },
+    {
+      component: EmailInput,
+      label: 'Email Input',
+      props: { label: 'Email', placeholder: 'Enter email...' }
+    },
+    {
+      component: SearchInput,
+      label: 'Search Input',
+      props: { placeholder: 'Search...' }
+    }
+  ];
+
   const componentCategories = [
     {
       id: 'buttons',
@@ -168,7 +223,7 @@ const AdvancedComponentLibrary = () => {
         },
         {
           name: 'IconButton',
-          component: IconButton,
+          component: UIIconButton,
           props: { children: <Settings />, tooltip: 'Settings' },
           code: `<IconButton tooltip="Settings"><Settings /></IconButton>`
         },
@@ -269,28 +324,28 @@ const AdvancedComponentLibrary = () => {
         {
           name: 'Modal',
           component: () => (
-            <Button onClick={() => setModalOpen(true)}>Open Modal</Button>
+            <MuiButton onClick={() => setModalOpen(true)}>Open Modal</MuiButton>
           ),
           code: `<Modal open={open} onClose={onClose} title="Modal Title">Content</Modal>`
         },
         {
           name: 'ConfirmModal',
           component: () => (
-            <Button onClick={() => setConfirmModalOpen(true)}>Open Confirm Modal</Button>
+            <MuiButton onClick={() => setConfirmModalOpen(true)}>Open Confirm Modal</MuiButton>
           ),
           code: `<ConfirmModal open={open} onClose={onClose} onConfirm={onConfirm} />`
         },
         {
           name: 'AlertModal',
           component: () => (
-            <Button onClick={() => setAlertModalOpen(true)}>Open Alert Modal</Button>
+            <MuiButton onClick={() => setAlertModalOpen(true)}>Open Alert Modal</MuiButton>
           ),
           code: `<AlertModal open={open} onClose={onClose} title="Alert" message="Alert message" />`
         },
         {
           name: 'FormModal',
           component: () => (
-            <Button onClick={() => setFormModalOpen(true)}>Open Form Modal</Button>
+            <MuiButton onClick={() => setFormModalOpen(true)}>Open Form Modal</MuiButton>
           ),
           code: `<FormModal open={open} onClose={onClose} title="Form Modal">Form content</FormModal>`
         }
@@ -455,8 +510,8 @@ const AdvancedComponentLibrary = () => {
           code: `<PageHeader title="Page Title" subtitle="..." breadcrumbs={breadcrumbs} />`
         },
         {
-          name: 'AppBarHeader',
-          component: AppBarHeader,
+          name: 'AppBar',
+          component: AppBar,
           props: {
             title: 'Application',
             showSearch: true,
@@ -465,12 +520,12 @@ const AdvancedComponentLibrary = () => {
               { icon: <Settings />, onClick: () => {} }
             ]
           },
-          code: `<AppBarHeader title="Application" showSearch actions={actions} />`
+          code: `<AppBar title="Application" showSearch actions={actions} />`
         },
         {
           name: 'Drawer',
           component: () => (
-            <Button onClick={() => setDrawerOpen(true)}>Open Drawer</Button>
+            <MuiButton onClick={() => setDrawerOpen(true)}>Open Drawer</MuiButton>
           ),
           code: `<Drawer open={open} onClose={onClose}>Navigation content</Drawer>`
         }
@@ -491,22 +546,22 @@ const AdvancedComponentLibrary = () => {
           code: `<Alert severity="success" message="Success message!" />`
         },
         {
-          name: 'ToastAlert',
-          component: ToastAlert,
+          name: 'Toast',
+          component: Toast,
           props: {
             severity: 'info',
             message: 'This is a toast notification'
           },
-          code: `<ToastAlert severity="info" message="Toast message" />`
+          code: `<Toast severity="info" message="Toast message" />`
         },
         {
-          name: 'BannerAlert',
-          component: BannerAlert,
+          name: 'InlineAlert',
+          component: InlineAlert,
           props: {
             severity: 'warning',
             message: 'This is a banner alert'
           },
-          code: `<BannerAlert severity="warning" message="Warning message" />`
+          code: `<InlineAlert severity="warning" message="Warning message" />`
         },
         {
           name: 'Spinner',
@@ -540,7 +595,7 @@ const AdvancedComponentLibrary = () => {
           name: 'Tooltip',
           component: () => (
             <Tooltip title="This is a tooltip">
-              <Button>Hover me</Button>
+              <MuiButton>Hover me</MuiButton>
             </Tooltip>
           ),
           code: `<Tooltip title="Tooltip text"><Button>Hover me</Button></Tooltip>`
@@ -552,7 +607,7 @@ const AdvancedComponentLibrary = () => {
               title="Rich Tooltip" 
               content="This tooltip has rich content with formatting"
             >
-              <Button>Rich Tooltip</Button>
+              <MuiButton>Rich Tooltip</MuiButton>
             </RichTooltip>
           ),
           code: `<RichTooltip title="Title" content="Rich content"><Button>Rich Tooltip</Button></RichTooltip>`
@@ -969,7 +1024,7 @@ const AdvancedComponentLibrary = () => {
                   <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
                     Basic Modal
                   </Typography>
-                  <Button onClick={() => setModalOpen(true)}>Open Modal</Button>
+                  <MuiButton onClick={() => setModalOpen(true)}>Open Modal</MuiButton>
                   <Modal
                     open={modalOpen}
                     onClose={() => setModalOpen(false)}
@@ -986,7 +1041,7 @@ const AdvancedComponentLibrary = () => {
                   <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
                     Confirm Modal
                   </Typography>
-                  <Button onClick={() => setConfirmModalOpen(true)}>Open Confirm Modal</Button>
+                  <MuiButton onClick={() => setConfirmModalOpen(true)}>Open Confirm Modal</MuiButton>
                   <ConfirmModal
                     open={confirmModalOpen}
                     onClose={() => setConfirmModalOpen(false)}
@@ -1181,5 +1236,5 @@ const AdvancedComponentLibrary = () => {
   );
 };
 
-export { AdvancedComponentLibrary };
+export { AdvancedComponentLibrary, AdvancedComponentLibrary as ComponentShowcase };
 export default AdvancedComponentLibrary;

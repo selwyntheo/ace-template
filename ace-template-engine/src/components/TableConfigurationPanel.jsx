@@ -319,10 +319,34 @@ const TableConfigurationPanel = ({
       // 1. Update properties via callback (updates in-memory store)
       if (onPropertyChange) {
         console.log('📤 TableConfigurationPanel: Updating properties via callback');
+        
+        // Create the complete table configuration structure that matches EnhancedTableComponent format
+        const tableConfiguration = {
+          tableConfig: {
+            source: dataState.source,
+            query: dataState.query,
+            pageSize: dataState.pageSize,
+            lastFetched: dataState.lastFetched
+          },
+          columnConfigs: columnConfigs,
+          selectedColumns: dataState.selectedColumns || [],
+          availableColumns: (dataState.availableColumns || []).map(col => ({
+            field: col.field,
+            headerName: col.headerName,
+            type: col.type,
+            width: col.width
+          }))
+        };
+        
+        // Update individual properties
         onPropertyChange('dataConfig', dataState);
         onPropertyChange('advancedOptions', advancedOptions);
         onPropertyChange('columnConfigs', columnConfigs);
         onPropertyChange('mongoQueryTemplate', mongoQueryTemplate);
+        
+        // Update the complete table configuration (for EnhancedTableComponent compatibility)
+        onPropertyChange('tableConfiguration', tableConfiguration);
+        
         console.log('✅ TableConfigurationPanel: Properties updated via callback');
       } else {
         console.warn('⚠️ TableConfigurationPanel: No onPropertyChange callback available');
@@ -408,8 +432,15 @@ const TableConfigurationPanel = ({
         loading: false
       }));
 
-      // Auto-save after successful query
-      await saveConfiguration();
+      // Auto-save after successful query (only if not called from PropertyInspector)
+      if (onPropertyChange) {
+        // If we have onPropertyChange, we're being used in PropertyInspector
+        // Don't auto-save to prevent loops, just update the properties
+        console.log('🔄 TableConfigurationPanel: Skipping auto-save (PropertyInspector context)');
+      } else {
+        // We're being used standalone, safe to auto-save
+        await saveConfiguration();
+      }
       
       console.log('✅ TableConfigurationPanel: Query executed and configuration saved');
       
@@ -612,7 +643,7 @@ const TableConfigurationPanel = ({
 
       // Save to design collection
       if (designId) {
-        const currentDesign = await designApi.getDesign(designId);
+        const currentDesign = await designApi.getDesignById(designId);
         await designApi.updateDesign(designId, {
           ...currentDesign,
           customQueries: updatedQueries,
@@ -652,7 +683,7 @@ const TableConfigurationPanel = ({
     
     // Save updated timestamps to design
     if (designId) {
-      designApi.getDesign(designId).then(currentDesign => {
+      designApi.getDesignById(designId).then(currentDesign => {
         designApi.updateDesign(designId, {
           ...currentDesign,
           customQueries: updatedQueries
@@ -671,7 +702,7 @@ const TableConfigurationPanel = ({
 
       // Update design collection
       if (designId) {
-        const currentDesign = await designApi.getDesign(designId);
+        const currentDesign = await designApi.getDesignById(designId);
         await designApi.updateDesign(designId, {
           ...currentDesign,
           customQueries: updatedQueries
@@ -698,7 +729,7 @@ const TableConfigurationPanel = ({
     
     // Save to design collection
     if (designId) {
-      designApi.getDesign(designId).then(currentDesign => {
+      designApi.getDesignById(designId).then(currentDesign => {
         designApi.updateDesign(designId, {
           ...currentDesign,
           queryHistory: updatedHistory
@@ -726,9 +757,17 @@ const TableConfigurationPanel = ({
   };
 
   const handleSaveAndClose = async () => {
-    const success = await saveConfiguration();
-    if (success) {
-      setSaveDialog(false);
+    try {
+      const success = await saveConfiguration();
+      if (success) {
+        setSaveDialog(false);
+        // Show success message
+        setDataState(prev => ({ ...prev, lastFetched: new Date().toISOString() }));
+        console.log('✅ Configuration saved successfully');
+      }
+    } catch (error) {
+      console.error('❌ Failed to save configuration:', error);
+      alert(`Failed to save configuration: ${error.message}`);
     }
   };
 
@@ -1131,7 +1170,7 @@ const TableConfigurationPanel = ({
             onClick={saveConfiguration}
             color="success"
           >
-            Save & Apply
+            {onPropertyChange ? 'Save to PropertyInspector & DB' : 'Save to Database'}
           </Button>
         </Stack>
       </CardActions>

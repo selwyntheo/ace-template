@@ -102,19 +102,919 @@ import {
   CloudUpload,
   Close,
   PlayArrow,
-  Stop
+  Stop,
+  Clear,
+  Search as SearchIcon
 } from '@mui/icons-material';
 import { useCanvasStore } from '../stores/canvasStore';
 import EnhancedTableComponent from './EnhancedTableComponent'; // Original component with infinite loop fixes
 import PropertyInspector from './PropertyInspector'; // Original component with infinite loop fixes
 import { useParams } from 'react-router-dom';
 
-// Component library with proper drag/drop support
-// Enhanced Component Library with Rich Features
+// Import new UI library components
+import {
+  Button as UIButton,
+  ButtonSolid,
+  ButtonOutline,
+  ButtonText,
+  IconButton as UIIconButton,
+  Input as UIInput,
+  PasswordInput,
+  EmailInput,
+  SearchInput,
+  TextArea as UITextArea,
+  Modal as UIModal,
+  ConfirmModal,
+  AlertModal,
+  FormModal,
+  Card as UICard,
+  ActionCard,
+  StatsCard,
+  FeatureCard,
+  RadioGroup as UIRadioGroup,
+  Checkbox as UICheckbox,
+  Switch as UISwitch,
+  Toggle,
+  FormField,
+  Select as UISelect,
+  MultiSelect,
+  Combobox,
+  NativeSelect,
+  GroupedSelect,
+  Drawer as UIDrawer,
+  NavigationDrawer,
+  SidebarLayout,
+  Header as UIHeader,
+  NavigationHeader,
+  PageHeader,
+  AppBar as UIAppBar,
+  Accordion as UIAccordion,
+  AccordionGroup,
+  CollapsibleSection,
+  SearchBox,
+  AdvancedSearchBox,
+  Pagination as UIPagination,
+  AdvancedPagination,
+  Alert as UIAlert,
+  Toast,
+  SuccessAlert,
+  ErrorAlert,
+  WarningAlert,
+  InfoAlert,
+  Spinner,
+  ProgressBar,
+  LoadingOverlay,
+  Tooltip as UITooltip,
+  FloatingActionButton,
+  Badge as UIBadge,
+  Avatar as UIAvatar,
+  Menu as UIMenu,
+  DropdownMenu,
+  ActionMenu
+} from './UI';
+
+// Enhanced Component Library with new UI components
 const componentLibrary = [
+  // ===== BUTTON COMPONENTS =====
+  {
+    type: 'ui-button',
+    label: 'UI Button',
+    icon: <SmartButton />,
+    category: 'Buttons & Actions',
+    defaultProps: {
+      width: 120,
+      height: 40,
+      properties: { 
+        children: 'Button',
+        variant: 'contained',
+        color: 'primary',
+        size: 'medium',
+        disabled: false,
+        fullWidth: false
+      }
+    }
+  },
+  {
+    type: 'ui-button-solid',
+    label: 'Solid Button',
+    icon: <SmartButton />,
+    category: 'Buttons & Actions',
+    defaultProps: {
+      width: 120,
+      height: 40,
+      properties: { 
+        children: 'Solid Button',
+        color: 'primary',
+        size: 'medium'
+      }
+    }
+  },
+  {
+    type: 'ui-button-outline',
+    label: 'Outline Button',
+    icon: <SmartButton />,
+    category: 'Buttons & Actions',
+    defaultProps: {
+      width: 120,
+      height: 40,
+      properties: { 
+        children: 'Outline Button',
+        color: 'primary',
+        size: 'medium'
+      }
+    }
+  },
+  {
+    type: 'ui-button-text',
+    label: 'Text Button',
+    icon: <SmartButton />,
+    category: 'Buttons & Actions',
+    defaultProps: {
+      width: 120,
+      height: 40,
+      properties: { 
+        children: 'Text Button',
+        color: 'primary',
+        size: 'medium'
+      }
+    }
+  },
+  {
+    type: 'ui-icon-button',
+    label: 'Icon Button',
+    icon: <SmartButton />,
+    category: 'Buttons & Actions',
+    defaultProps: {
+      width: 48,
+      height: 48,
+      properties: { 
+        icon: 'SettingsIcon',
+        color: 'primary',
+        size: 'medium'
+      }
+    }
+  },
+  {
+    type: 'ui-floating-action-button',
+    label: 'FAB',
+    icon: <SmartButton />,
+    category: 'Buttons & Actions',
+    defaultProps: {
+      width: 56,
+      height: 56,
+      properties: { 
+        icon: 'AddIcon',
+        color: 'primary',
+        size: 'medium'
+      }
+    }
+  },
+
+  // ===== INPUT COMPONENTS =====
+  {
+    type: 'ui-input',
+    label: 'UI Input',
+    icon: <Input />,
+    category: 'Form Controls',
+    defaultProps: {
+      width: 200,
+      height: 56,
+      properties: { 
+        placeholder: 'Enter text...',
+        label: 'Input Label',
+        variant: 'outlined',
+        fullWidth: true
+      }
+    }
+  },
+  {
+    type: 'ui-password-input',
+    label: 'Password Input',
+    icon: <Input />,
+    category: 'Form Controls',
+    defaultProps: {
+      width: 200,
+      height: 56,
+      properties: { 
+        placeholder: 'Enter password...',
+        label: 'Password',
+        variant: 'outlined',
+        fullWidth: true
+      }
+    }
+  },
+  {
+    type: 'ui-email-input',
+    label: 'Email Input',
+    icon: <Input />,
+    category: 'Form Controls',
+    defaultProps: {
+      width: 200,
+      height: 56,
+      properties: { 
+        placeholder: 'Enter email...',
+        label: 'Email',
+        variant: 'outlined',
+        fullWidth: true
+      }
+    }
+  },
+  {
+    type: 'ui-search-input',
+    label: 'Search Input',
+    icon: <Input />,
+    category: 'Form Controls',
+    defaultProps: {
+      width: 200,
+      height: 56,
+      properties: { 
+        placeholder: 'Search...',
+        label: 'Search',
+        variant: 'outlined',
+        fullWidth: true
+      }
+    }
+  },
+  {
+    type: 'ui-textarea',
+    label: 'Text Area',
+    icon: <TextFormat />,
+    category: 'Form Controls',
+    defaultProps: {
+      width: 300,
+      height: 120,
+      properties: {
+        placeholder: 'Enter text...',
+        label: 'Text Area',
+        rows: 4,
+        variant: 'outlined',
+        fullWidth: true
+      }
+    }
+  },
+
+  // ===== SELECT COMPONENTS =====
+  {
+    type: 'ui-select',
+    label: 'UI Select',
+    icon: <ArrowDropDown />,
+    category: 'Form Controls',
+    defaultProps: {
+      width: 200,
+      height: 56,
+      properties: {
+        label: 'Select Option',
+        options: [
+          { value: 'option1', label: 'Option 1' },
+          { value: 'option2', label: 'Option 2' },
+          { value: 'option3', label: 'Option 3' }
+        ],
+        variant: 'outlined',
+        fullWidth: true
+      }
+    }
+  },
+  {
+    type: 'ui-multi-select',
+    label: 'Multi Select',
+    icon: <ArrowDropDown />,
+    category: 'Form Controls',
+    defaultProps: {
+      width: 200,
+      height: 56,
+      properties: {
+        label: 'Select Multiple',
+        options: [
+          { value: 'option1', label: 'Option 1' },
+          { value: 'option2', label: 'Option 2' },
+          { value: 'option3', label: 'Option 3' }
+        ],
+        variant: 'outlined',
+        fullWidth: true
+      }
+    }
+  },
+  {
+    type: 'ui-combobox',
+    label: 'Combobox',
+    icon: <ArrowDropDown />,
+    category: 'Form Controls',
+    defaultProps: {
+      width: 200,
+      height: 56,
+      properties: {
+        label: 'Combobox',
+        options: [
+          { value: 'option1', label: 'Option 1' },
+          { value: 'option2', label: 'Option 2' },
+          { value: 'option3', label: 'Option 3' }
+        ],
+        variant: 'outlined',
+        fullWidth: true
+      }
+    }
+  },
+
+  // ===== FORM CONTROL COMPONENTS =====
+  {
+    type: 'ui-radio-group',
+    label: 'Radio Group',
+    icon: <RadioButtonChecked />,
+    category: 'Form Controls',
+    defaultProps: {
+      width: 200,
+      height: 100,
+      properties: {
+        label: 'Radio Group',
+        options: [
+          { value: 'option1', label: 'Option 1' },
+          { value: 'option2', label: 'Option 2' }
+        ],
+        value: 'option1'
+      }
+    }
+  },
+  {
+    type: 'ui-checkbox',
+    label: 'UI Checkbox',
+    icon: <CheckBox />,
+    category: 'Form Controls',
+    defaultProps: {
+      width: 150,
+      height: 42,
+      properties: {
+        label: 'Checkbox Label',
+        checked: false,
+        color: 'primary'
+      }
+    }
+  },
+  {
+    type: 'ui-switch',
+    label: 'UI Switch',
+    icon: <ToggleOn />,
+    category: 'Form Controls',
+    defaultProps: {
+      width: 120,
+      height: 42,
+      properties: {
+        label: 'Switch Label',
+        checked: false,
+        color: 'primary'
+      }
+    }
+  },
+  {
+    type: 'ui-toggle',
+    label: 'Toggle',
+    icon: <ToggleOn />,
+    category: 'Form Controls',
+    defaultProps: {
+      width: 120,
+      height: 42,
+      properties: {
+        label: 'Toggle Label',
+        checked: false,
+        color: 'primary'
+      }
+    }
+  },
+
+  // ===== MODAL COMPONENTS =====
+  {
+    type: 'ui-modal',
+    label: 'UI Modal',
+    icon: <CropPortrait />,
+    category: 'Modals & Dialogs',
+    defaultProps: {
+      width: 400,
+      height: 300,
+      properties: {
+        title: 'Modal Title',
+        content: 'Modal content goes here...',
+        open: false,
+        showCloseButton: true
+      }
+    }
+  },
+  {
+    type: 'ui-confirm-modal',
+    label: 'Confirm Modal',
+    icon: <CropPortrait />,
+    category: 'Modals & Dialogs',
+    defaultProps: {
+      width: 400,
+      height: 200,
+      properties: {
+        title: 'Confirm Action',
+        message: 'Are you sure you want to proceed?',
+        open: false,
+        confirmText: 'Confirm',
+        cancelText: 'Cancel'
+      }
+    }
+  },
+  {
+    type: 'ui-alert-modal',
+    label: 'Alert Modal',
+    icon: <CropPortrait />,
+    category: 'Modals & Dialogs',
+    defaultProps: {
+      width: 400,
+      height: 200,
+      properties: {
+        title: 'Alert',
+        message: 'This is an alert message.',
+        open: false,
+        severity: 'warning'
+      }
+    }
+  },
+  {
+    type: 'ui-form-modal',
+    label: 'Form Modal',
+    icon: <CropPortrait />,
+    category: 'Modals & Dialogs',
+    defaultProps: {
+      width: 500,
+      height: 400,
+      properties: {
+        title: 'Form Modal',
+        fields: [
+          { name: 'name', label: 'Name', type: 'text' },
+          { name: 'email', label: 'Email', type: 'email' }
+        ],
+        open: false
+      }
+    }
+  },
+
+  // ===== CARD COMPONENTS =====
+  {
+    type: 'ui-card',
+    label: 'UI Card',
+    icon: <CropPortrait />,
+    category: 'Cards & Display',
+    defaultProps: {
+      width: 300,
+      height: 200,
+      properties: {
+        title: 'Card Title',
+        content: 'Card content goes here...',
+        elevation: 1,
+        variant: 'elevation'
+      }
+    }
+  },
+  {
+    type: 'ui-action-card',
+    label: 'Action Card',
+    icon: <CropPortrait />,
+    category: 'Cards & Display',
+    defaultProps: {
+      width: 300,
+      height: 250,
+      properties: {
+        title: 'Action Card',
+        content: 'Card with action buttons',
+        primaryAction: 'Primary',
+        secondaryAction: 'Secondary'
+      }
+    }
+  },
+  {
+    type: 'ui-stats-card',
+    label: 'Stats Card',
+    icon: <CropPortrait />,
+    category: 'Cards & Display',
+    defaultProps: {
+      width: 280,
+      height: 150,
+      properties: {
+        title: 'Total Users',
+        value: '1,234',
+        trend: '+12%',
+        color: 'primary'
+      }
+    }
+  },
+  {
+    type: 'ui-feature-card',
+    label: 'Feature Card',
+    icon: <CropPortrait />,
+    category: 'Cards & Display',
+    defaultProps: {
+      width: 320,
+      height: 200,
+      properties: {
+        title: 'Feature Title',
+        description: 'Feature description goes here...',
+        icon: 'Star',
+        color: 'primary'
+      }
+    }
+  },
+
+  // ===== NAVIGATION COMPONENTS =====
+  {
+    type: 'ui-search-box',
+    label: 'Search Box',
+    icon: <Input />,
+    category: 'Navigation',
+    defaultProps: {
+      width: 300,
+      height: 56,
+      properties: {
+        placeholder: 'Search...',
+        variant: 'outlined',
+        fullWidth: true
+      }
+    }
+  },
+  {
+    type: 'ui-advanced-search-box',
+    label: 'Advanced Search',
+    icon: <Input />,
+    category: 'Navigation',
+    defaultProps: {
+      width: 400,
+      height: 56,
+      properties: {
+        placeholder: 'Advanced search...',
+        variant: 'outlined',
+        showFilters: true
+      }
+    }
+  },
+  {
+    type: 'ui-pagination',
+    label: 'Pagination',
+    icon: <NavigateNext />,
+    category: 'Navigation',
+    defaultProps: {
+      width: 300,
+      height: 50,
+      properties: {
+        count: 10,
+        page: 1,
+        variant: 'outlined',
+        color: 'primary'
+      }
+    }
+  },
+  {
+    type: 'ui-advanced-pagination',
+    label: 'Advanced Pagination',
+    icon: <NavigateNext />,
+    category: 'Navigation',
+    defaultProps: {
+      width: 400,
+      height: 50,
+      properties: {
+        count: 10,
+        page: 1,
+        showFirstButton: true,
+        showLastButton: true,
+        siblingCount: 1
+      }
+    }
+  },
+
+  // ===== FEEDBACK COMPONENTS =====
+  {
+    type: 'ui-alert',
+    label: 'UI Alert',
+    icon: <Warning />,
+    category: 'Feedback',
+    defaultProps: {
+      width: 300,
+      height: 60,
+      properties: {
+        message: 'This is an alert message',
+        severity: 'info',
+        variant: 'filled',
+        closable: true
+      }
+    }
+  },
+  {
+    type: 'ui-success-alert',
+    label: 'Success Alert',
+    icon: <Warning />,
+    category: 'Feedback',
+    defaultProps: {
+      width: 300,
+      height: 60,
+      properties: {
+        message: 'Success! Operation completed.',
+        severity: 'success',
+        variant: 'filled'
+      }
+    }
+  },
+  {
+    type: 'ui-error-alert',
+    label: 'Error Alert',
+    icon: <Warning />,
+    category: 'Feedback',
+    defaultProps: {
+      width: 300,
+      height: 60,
+      properties: {
+        message: 'Error! Something went wrong.',
+        severity: 'error',
+        variant: 'filled'
+      }
+    }
+  },
+  {
+    type: 'ui-warning-alert',
+    label: 'Warning Alert',
+    icon: <Warning />,
+    category: 'Feedback',
+    defaultProps: {
+      width: 300,
+      height: 60,
+      properties: {
+        message: 'Warning! Please check your input.',
+        severity: 'warning',
+        variant: 'filled'
+      }
+    }
+  },
+  {
+    type: 'ui-toast',
+    label: 'Toast',
+    icon: <Info />,
+    category: 'Feedback',
+    defaultProps: {
+      width: 350,
+      height: 60,
+      properties: {
+        message: 'Toast notification',
+        position: 'top-right',
+        duration: 4000,
+        type: 'info'
+      }
+    }
+  },
+
+  // ===== LOADING COMPONENTS =====
+  {
+    type: 'ui-spinner',
+    label: 'Spinner',
+    icon: <Autorenew />,
+    category: 'Loading',
+    defaultProps: {
+      width: 40,
+      height: 40,
+      properties: {
+        size: 'medium',
+        color: 'primary',
+        variant: 'indeterminate'
+      }
+    }
+  },
+  {
+    type: 'ui-progress-bar',
+    label: 'Progress Bar',
+    icon: <Timeline />,
+    category: 'Loading',
+    defaultProps: {
+      width: 300,
+      height: 8,
+      properties: {
+        value: 50,
+        variant: 'determinate',
+        color: 'primary'
+      }
+    }
+  },
+  {
+    type: 'ui-loading-overlay',
+    label: 'Loading Overlay',
+    icon: <Autorenew />,
+    category: 'Loading',
+    defaultProps: {
+      width: 200,
+      height: 200,
+      properties: {
+        loading: true,
+        message: 'Loading...',
+        color: 'primary'
+      }
+    }
+  },
+
+  // ===== LAYOUT COMPONENTS =====
+  {
+    type: 'ui-drawer',
+    label: 'UI Drawer',
+    icon: <ViewModule />,
+    category: 'Layout',
+    defaultProps: {
+      width: 280,
+      height: 400,
+      properties: {
+        open: true,
+        anchor: 'left',
+        variant: 'temporary',
+        content: 'Drawer content'
+      }
+    }
+  },
+  {
+    type: 'ui-header',
+    label: 'UI Header',
+    icon: <ViewModule />,
+    category: 'Layout',
+    defaultProps: {
+      width: 600,
+      height: 64,
+      properties: {
+        title: 'Header Title',
+        variant: 'elevated',
+        color: 'primary'
+      }
+    }
+  },
+  {
+    type: 'ui-sidebar-layout',
+    label: 'Sidebar Layout',
+    icon: <ViewModule />,
+    category: 'Layout',
+    defaultProps: {
+      width: 800,
+      height: 600,
+      properties: {
+        sidebarWidth: 240,
+        sidebarOpen: true,
+        sidebarContent: 'Sidebar content',
+        mainContent: 'Main content'
+      }
+    }
+  },
+  {
+    type: 'ui-accordion',
+    label: 'UI Accordion',
+    icon: <ExpandMore />,
+    category: 'Layout',
+    defaultProps: {
+      width: 400,
+      height: 200,
+      properties: {
+        sections: [
+          { title: 'Section 1', content: 'Content 1' },
+          { title: 'Section 2', content: 'Content 2' }
+        ],
+        defaultExpanded: false
+      }
+    }
+  },
+
+  // ===== UTILITY COMPONENTS =====
+  {
+    type: 'ui-tooltip',
+    label: 'UI Tooltip',
+    icon: <Help />,
+    category: 'Utilities',
+    defaultProps: {
+      width: 100,
+      height: 40,
+      properties: {
+        title: 'Tooltip text',
+        placement: 'top',
+        arrow: true,
+        children: 'Hover me'
+      }
+    }
+  },
+  {
+    type: 'ui-badge',
+    label: 'UI Badge',
+    icon: <Notifications />,
+    category: 'Utilities',
+    defaultProps: {
+      width: 60,
+      height: 40,
+      properties: {
+        badgeContent: 4,
+        color: 'error',
+        variant: 'standard',
+        children: 'Badge'
+      }
+    }
+  },
+  {
+    type: 'ui-avatar',
+    label: 'UI Avatar',
+    icon: <AccountCircle />,
+    category: 'Utilities',
+    defaultProps: {
+      width: 56,
+      height: 56,
+      properties: {
+        src: '',
+        alt: 'Avatar',
+        variant: 'circular',
+        size: 'medium'
+      }
+    }
+  },
+  {
+    type: 'ui-menu',
+    label: 'UI Menu',
+    icon: <ViewModule />,
+    category: 'Utilities',
+    defaultProps: {
+      width: 200,
+      height: 150,
+      properties: {
+        items: [
+          { label: 'Menu Item 1', value: 'item1' },
+          { label: 'Menu Item 2', value: 'item2' },
+          { label: 'Menu Item 3', value: 'item3' }
+        ],
+        open: false
+      }
+    }
+  },
+
+  // ===== LEGACY COMPONENTS (keep for compatibility) =====
   {
     type: 'text',
     label: 'Text',
+    icon: <TextFields />,
+    category: 'Legacy',
+    defaultProps: {
+      width: 200,
+      height: 70,
+      properties: { 
+        content: 'Sample Text',
+        variant: 'body1',
+        color: 'text.primary',
+        align: 'left',
+        fontWeight: 'normal',
+        fontSize: '14px',
+        lineHeight: '1.5',
+        letterSpacing: 'normal'
+      },
+      styles: {
+        fontFamily: 'Roboto, sans-serif'
+      }
+    }
+  },
+  {
+    type: 'button',
+    label: 'Button',
+    icon: <SmartButton />,
+    category: 'Legacy',
+    defaultProps: {
+      width: 120,
+      height: 60,
+      properties: { 
+        label: 'Button',
+        variant: 'contained',
+        color: 'primary',
+        size: 'medium',
+        disabled: false,
+        fullWidth: false,
+        startIcon: '',
+        endIcon: '',
+        onClick: '',
+        type: 'button'
+      }
+    }
+  },
+  {
+    type: 'enhanced-table',
+    label: 'Enhanced Table',
+    icon: <TableChart />,
+    category: 'Data Management',
+    defaultProps: {
+      width: 600,
+      height: 400,
+      properties: {
+        dataSource: 'projects',
+        columns: [],
+        rowsPerPage: 10,
+        enableSorting: true,
+        enableFiltering: true,
+        enablePagination: true,
+        enableSearch: true,
+        enableColumnResizing: true,
+        enableRowSelection: false,
+        enableEditing: false,
+        pageSize: 10
+      }
+    }
+  }
+];
+
+// Canvas Element Component with working drag/resize
+    [
+      {
+      label: 'Text',
     icon: <TextFields />,
     category: 'Content',
     defaultProps: {
@@ -799,6 +1699,7 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect, isPr
         );
 
       case 'Table':
+      case 'enhanced-table':
         return (
           <EnhancedTableComponent
             component={element}
@@ -807,6 +1708,510 @@ const CanvasElement = ({ element, isSelected, onUpdate, onDelete, onSelect, isPr
             styles={commonStyles}
             isEditMode={!isPreviewMode}
           />
+        );
+
+      // ===== NEW UI COMPONENTS =====
+      
+      // Button Components
+      case 'ui-button':
+        return (
+          <UIButton
+            variant={properties.variant || 'contained'}
+            color={properties.color || 'primary'}
+            size={properties.size || 'medium'}
+            disabled={properties.disabled || locked}
+            fullWidth={properties.fullWidth}
+            sx={commonStyles}
+          >
+            {properties.children || 'Button'}
+          </UIButton>
+        );
+
+      case 'ui-button-solid':
+        return (
+          <ButtonSolid
+            color={properties.color || 'primary'}
+            size={properties.size || 'medium'}
+            disabled={locked}
+            sx={commonStyles}
+          >
+            {properties.children || 'Solid Button'}
+          </ButtonSolid>
+        );
+
+      case 'ui-button-outline':
+        return (
+          <ButtonOutline
+            color={properties.color || 'primary'}
+            size={properties.size || 'medium'}
+            disabled={locked}
+            sx={commonStyles}
+          >
+            {properties.children || 'Outline Button'}
+          </ButtonOutline>
+        );
+
+      case 'ui-button-text':
+        return (
+          <ButtonText
+            color={properties.color || 'primary'}
+            size={properties.size || 'medium'}
+            disabled={locked}
+            sx={commonStyles}
+          >
+            {properties.children || 'Text Button'}
+          </ButtonText>
+        );
+
+      case 'ui-icon-button':
+        return (
+          <UIIconButton
+            color={properties.color || 'primary'}
+            size={properties.size || 'medium'}
+            disabled={locked}
+            sx={commonStyles}
+          >
+            <SettingsIcon />
+          </UIIconButton>
+        );
+
+      case 'ui-floating-action-button':
+        return (
+          <FloatingActionButton
+            color={properties.color || 'primary'}
+            size={properties.size || 'medium'}
+            disabled={locked}
+            sx={commonStyles}
+          >
+            <AddIcon />
+          </FloatingActionButton>
+        );
+
+      // Input Components
+      case 'ui-input':
+        return (
+          <UIInput
+            placeholder={properties.placeholder || 'Enter text...'}
+            label={properties.label || 'Input Label'}
+            variant={properties.variant || 'outlined'}
+            fullWidth={properties.fullWidth}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-password-input':
+        return (
+          <PasswordInput
+            placeholder={properties.placeholder || 'Enter password...'}
+            label={properties.label || 'Password'}
+            variant={properties.variant || 'outlined'}
+            fullWidth={properties.fullWidth}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-email-input':
+        return (
+          <EmailInput
+            placeholder={properties.placeholder || 'Enter email...'}
+            label={properties.label || 'Email'}
+            variant={properties.variant || 'outlined'}
+            fullWidth={properties.fullWidth}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-search-input':
+        return (
+          <SearchInput
+            placeholder={properties.placeholder || 'Search...'}
+            label={properties.label || 'Search'}
+            variant={properties.variant || 'outlined'}
+            fullWidth={properties.fullWidth}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-textarea':
+        return (
+          <UITextArea
+            placeholder={properties.placeholder || 'Enter text...'}
+            label={properties.label || 'Text Area'}
+            rows={properties.rows || 4}
+            variant={properties.variant || 'outlined'}
+            fullWidth={properties.fullWidth}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      // Select Components
+      case 'ui-select':
+        return (
+          <UISelect
+            label={properties.label || 'Select Option'}
+            options={properties.options || []}
+            variant={properties.variant || 'outlined'}
+            fullWidth={properties.fullWidth}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-multi-select':
+        return (
+          <MultiSelect
+            label={properties.label || 'Select Multiple'}
+            options={properties.options || []}
+            variant={properties.variant || 'outlined'}
+            fullWidth={properties.fullWidth}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-combobox':
+        return (
+          <Combobox
+            label={properties.label || 'Combobox'}
+            options={properties.options || []}
+            variant={properties.variant || 'outlined'}
+            fullWidth={properties.fullWidth}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      // Form Control Components
+      case 'ui-radio-group':
+        return (
+          <UIRadioGroup
+            label={properties.label || 'Radio Group'}
+            options={properties.options || []}
+            value={properties.value}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-checkbox':
+        return (
+          <UICheckbox
+            label={properties.label || 'Checkbox Label'}
+            checked={properties.checked || false}
+            color={properties.color || 'primary'}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-switch':
+        return (
+          <UISwitch
+            label={properties.label || 'Switch Label'}
+            checked={properties.checked || false}
+            color={properties.color || 'primary'}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-toggle':
+        return (
+          <Toggle
+            label={properties.label || 'Toggle Label'}
+            checked={properties.checked || false}
+            color={properties.color || 'primary'}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      // Modal Components (shown as preview cards)
+      case 'ui-modal':
+      case 'ui-confirm-modal':
+      case 'ui-alert-modal':
+      case 'ui-form-modal':
+        return (
+          <Box
+            sx={{
+              ...commonStyles,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#f5f5f5',
+              border: '2px dashed #ccc',
+              borderRadius: 1
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {properties.title || 'Modal'} (Preview)
+            </Typography>
+          </Box>
+        );
+
+      // Card Components
+      case 'ui-card':
+        return (
+          <UICard
+            title={properties.title || 'Card Title'}
+            content={properties.content || 'Card content goes here...'}
+            elevation={properties.elevation || 1}
+            variant={properties.variant || 'elevation'}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-action-card':
+        return (
+          <ActionCard
+            title={properties.title || 'Action Card'}
+            content={properties.content || 'Card with action buttons'}
+            primaryAction={properties.primaryAction || 'Primary'}
+            secondaryAction={properties.secondaryAction || 'Secondary'}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-stats-card':
+        return (
+          <StatsCard
+            title={properties.title || 'Total Users'}
+            value={properties.value || '1,234'}
+            trend={properties.trend || '+12%'}
+            color={properties.color || 'primary'}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-feature-card':
+        return (
+          <FeatureCard
+            title={properties.title || 'Feature Title'}
+            description={properties.description || 'Feature description goes here...'}
+            icon={properties.icon || 'Star'}
+            color={properties.color || 'primary'}
+            sx={commonStyles}
+          />
+        );
+
+      // Navigation Components
+      case 'ui-search-box':
+        return (
+          <SearchBox
+            placeholder={properties.placeholder || 'Search...'}
+            variant={properties.variant || 'outlined'}
+            fullWidth={properties.fullWidth}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-advanced-search-box':
+        return (
+          <AdvancedSearchBox
+            placeholder={properties.placeholder || 'Advanced search...'}
+            variant={properties.variant || 'outlined'}
+            showFilters={properties.showFilters}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-pagination':
+        return (
+          <UIPagination
+            count={properties.count || 10}
+            page={properties.page || 1}
+            variant={properties.variant || 'outlined'}
+            color={properties.color || 'primary'}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-advanced-pagination':
+        return (
+          <AdvancedPagination
+            count={properties.count || 10}
+            page={properties.page || 1}
+            showFirstButton={properties.showFirstButton}
+            showLastButton={properties.showLastButton}
+            siblingCount={properties.siblingCount || 1}
+            disabled={locked}
+            sx={commonStyles}
+          />
+        );
+
+      // Feedback Components
+      case 'ui-alert':
+        return (
+          <UIAlert
+            message={properties.message || 'This is an alert message'}
+            severity={properties.severity || 'info'}
+            variant={properties.variant || 'filled'}
+            closable={properties.closable}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-success-alert':
+        return (
+          <SuccessAlert
+            message={properties.message || 'Success! Operation completed.'}
+            variant={properties.variant || 'filled'}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-error-alert':
+        return (
+          <ErrorAlert
+            message={properties.message || 'Error! Something went wrong.'}
+            variant={properties.variant || 'filled'}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-warning-alert':
+        return (
+          <WarningAlert
+            message={properties.message || 'Warning! Please check your input.'}
+            variant={properties.variant || 'filled'}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-toast':
+        return (
+          <Toast
+            message={properties.message || 'Toast notification'}
+            position={properties.position || 'top-right'}
+            duration={properties.duration || 4000}
+            type={properties.type || 'info'}
+            sx={commonStyles}
+          />
+        );
+
+      // Loading Components
+      case 'ui-spinner':
+        return (
+          <Spinner
+            size={properties.size || 'medium'}
+            color={properties.color || 'primary'}
+            variant={properties.variant || 'indeterminate'}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-progress-bar':
+        return (
+          <ProgressBar
+            value={properties.value || 50}
+            variant={properties.variant || 'determinate'}
+            color={properties.color || 'primary'}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-loading-overlay':
+        return (
+          <LoadingOverlay
+            loading={properties.loading}
+            message={properties.message || 'Loading...'}
+            color={properties.color || 'primary'}
+            sx={commonStyles}
+          />
+        );
+
+      // Layout Components (shown as preview containers)
+      case 'ui-drawer':
+      case 'ui-header':
+      case 'ui-sidebar-layout':
+      case 'ui-accordion':
+        return (
+          <Box
+            sx={{
+              ...commonStyles,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#f5f5f5',
+              border: '2px dashed #ccc',
+              borderRadius: 1
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {type.replace('ui-', '').replace('-', ' ').toUpperCase()} (Layout Preview)
+            </Typography>
+          </Box>
+        );
+
+      // Utility Components
+      case 'ui-tooltip':
+        return (
+          <UITooltip
+            title={properties.title || 'Tooltip text'}
+            placement={properties.placement || 'top'}
+            arrow={properties.arrow}
+            sx={commonStyles}
+          >
+            <Box sx={{ ...commonStyles, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Typography variant="body2">
+                {properties.children || 'Hover me'}
+              </Typography>
+            </Box>
+          </UITooltip>
+        );
+
+      case 'ui-badge':
+        return (
+          <UIBadge
+            badgeContent={properties.badgeContent || 4}
+            color={properties.color || 'error'}
+            variant={properties.variant || 'standard'}
+            sx={commonStyles}
+          >
+            <Box sx={{ ...commonStyles, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Typography variant="body2">
+                {properties.children || 'Badge'}
+              </Typography>
+            </Box>
+          </UIBadge>
+        );
+
+      case 'ui-avatar':
+        return (
+          <UIAvatar
+            src={properties.src}
+            alt={properties.alt || 'Avatar'}
+            variant={properties.variant || 'circular'}
+            size={properties.size || 'medium'}
+            sx={commonStyles}
+          />
+        );
+
+      case 'ui-menu':
+        return (
+          <Box
+            sx={{
+              ...commonStyles,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#f5f5f5',
+              border: '2px dashed #ccc',
+              borderRadius: 1
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              Menu (Preview)
+            </Typography>
+          </Box>
         );
 
       default:
@@ -1038,6 +2443,14 @@ const CanvasEditor = () => {
   const [zoom, setZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(true);
   const [previewMode, setPreviewMode] = useState(false);
+  
+  // Component library search and recently used
+  const [componentSearch, setComponentSearch] = useState('');
+  const [recentlyUsed, setRecentlyUsed] = useState(() => {
+    const saved = localStorage.getItem('ace-recently-used-components');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [showOnlyRecent, setShowOnlyRecent] = useState(false);
 
   // Enhanced state for save/naming/version functionality
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -1111,12 +2524,17 @@ const CanvasEditor = () => {
     addElement(newElement);
     selectElement(newElement.id);
 
+    // Update recently used components
+    const updatedRecent = [componentType, ...recentlyUsed.filter(type => type !== componentType)].slice(0, 10);
+    setRecentlyUsed(updatedRecent);
+    localStorage.setItem('ace-recently-used-components', JSON.stringify(updatedRecent));
+
     setNotification({
       open: true,
       message: `Added ${component.label} component`,
       severity: 'success',
     });
-  }, [addElement, selectElement, generateId]);
+  }, [addElement, selectElement, generateId, recentlyUsed]);
 
   // Handle element updates
   const handleElementUpdate = useCallback((elementId, updates) => {
@@ -1552,64 +2970,294 @@ const CanvasEditor = () => {
                 Components
               </Typography>
               
-              {/* Group components by category */}
-              {['Content', 'Form Controls', 'Display', 'Layout', 'Navigation', 'Feedback', 'Data Management'].map((category) => {
-                const categoryComponents = componentLibrary.filter(comp => comp.category === category);
-                if (categoryComponents.length === 0) return null;
-                
-                return (
-                  <Box key={category} sx={{ mb: 2 }}>
-                    <Typography 
-                      variant="subtitle2" 
-                      sx={{ 
-                        color: '#4A5568', 
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: 1,
-                        mb: 1,
-                        fontSize: '0.75rem',
-                      }}
+              {/* Search Input */}
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Search components..."
+                value={componentSearch}
+                onChange={(e) => setComponentSearch(e.target.value)}
+                InputProps={{
+                  startAdornment: <SearchIcon sx={{ color: '#9CA3AF', mr: 1 }} />,
+                  endAdornment: componentSearch && (
+                    <IconButton
+                      size="small"
+                      onClick={() => setComponentSearch('')}
+                      sx={{ p: 0.5 }}
                     >
-                      {category}
-                    </Typography>
-                    <Grid container spacing={1}>
-                      {categoryComponents.map((component) => (
-                        <Grid item xs={6} key={component.type}>
-                          <Button
-                            variant="outlined"
-                            fullWidth
-                            onClick={() => addComponent(component.type)}
-                            sx={{
-                              height: '60px',
-                              flexDirection: 'column',
-                              gap: 0.5,
-                              fontSize: '11px',
-                              border: '1px solid #E2E8F0',
-                              color: '#4A5568',
-                              backgroundColor: 'white',
-                              '&:hover': {
-                                backgroundColor: 'rgba(107, 115, 255, 0.04)',
-                                borderColor: '#2B9CAE',
-                                color: '#2B9CAE',
-                                '& .MuiSvgIcon-root': {
+                      <Clear sx={{ fontSize: '16px' }} />
+                    </IconButton>
+                  ),
+                }}
+                sx={{
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'white',
+                    '&:hover': {
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#2B9CAE',
+                      },
+                    },
+                    '&.Mui-focused': {
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#2B9CAE',
+                      },
+                    },
+                  },
+                }}
+              />
+
+              {/* Toggle Recently Used */}
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={showOnlyRecent}
+                    onChange={(e) => setShowOnlyRecent(e.target.checked)}
+                    size="small"
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: '#2B9CAE',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: 'rgba(43, 156, 174, 0.5)',
+                      },
+                    }}
+                  />
+                }
+                label="Recently Used Only"
+                sx={{ 
+                  color: '#4A5568', 
+                  mb: 2,
+                  '& .MuiFormControlLabel-label': {
+                    fontSize: '0.875rem',
+                  },
+                }}
+              />
+
+              {/* Filter and display components */}
+              {(() => {
+                // Filter components based on search and recently used
+                const getFilteredComponents = () => {
+                  let components = componentLibrary;
+                  
+                  if (showOnlyRecent && recentlyUsed.length > 0) {
+                    components = recentlyUsed.map(type => 
+                      componentLibrary.find(comp => comp.type === type)
+                    ).filter(Boolean);
+                  }
+                  
+                  if (componentSearch) {
+                    const searchLower = componentSearch.toLowerCase();
+                    components = components.filter(comp => 
+                      comp.label.toLowerCase().includes(searchLower) ||
+                      comp.category.toLowerCase().includes(searchLower) ||
+                      comp.type.toLowerCase().includes(searchLower)
+                    );
+                  }
+                  
+                  return components;
+                };
+
+                const filteredComponents = getFilteredComponents();
+
+                if (showOnlyRecent && filteredComponents.length > 0) {
+                  // Show recently used components in a flat grid
+                  return (
+                    <Box>
+                      <Typography 
+                        variant="subtitle2" 
+                        sx={{ 
+                          color: '#4A5568', 
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          letterSpacing: 1,
+                          mb: 1,
+                          fontSize: '0.75rem',
+                        }}
+                      >
+                        Recently Used ({filteredComponents.length})
+                      </Typography>
+                      <Grid container spacing={1}>
+                        {filteredComponents.map((component) => (
+                          <Grid item xs={4} key={component.type}>
+                            <Button
+                              variant="outlined"
+                              fullWidth
+                              onClick={() => addComponent(component.type)}
+                              sx={{
+                                height: '70px',
+                                flexDirection: 'column',
+                                gap: 0.5,
+                                fontSize: '10px',
+                                border: '1px solid #E2E8F0',
+                                color: '#4A5568',
+                                backgroundColor: 'white',
+                                '&:hover': {
+                                  backgroundColor: 'rgba(107, 115, 255, 0.04)',
+                                  borderColor: '#2B9CAE',
                                   color: '#2B9CAE',
+                                  '& .MuiSvgIcon-root': {
+                                    color: '#2B9CAE',
+                                  },
                                 },
-                              },
-                              '& .MuiSvgIcon-root': {
-                                color: '#718096',
-                                fontSize: '1.2rem',
-                              },
-                            }}
-                          >
-                            {component.icon}
-                            {component.label}
-                          </Button>
+                                '& .MuiSvgIcon-root': {
+                                  color: '#718096',
+                                  fontSize: '1.1rem',
+                                },
+                              }}
+                            >
+                              {component.icon}
+                              <Box sx={{ textAlign: 'center', lineHeight: 1.2 }}>
+                                {component.label}
+                              </Box>
+                            </Button>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </Box>
+                  );
+                } else if (componentSearch && filteredComponents.length > 0) {
+                  // Show search results in a flat grid
+                  return (
+                    <Box>
+                      <Typography 
+                        variant="subtitle2" 
+                        sx={{ 
+                          color: '#4A5568', 
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          letterSpacing: 1,
+                          mb: 1,
+                          fontSize: '0.75rem',
+                        }}
+                      >
+                        Search Results ({filteredComponents.length})
+                      </Typography>
+                      <Grid container spacing={1}>
+                        {filteredComponents.map((component) => (
+                          <Grid item xs={4} key={component.type}>
+                            <Button
+                              variant="outlined"
+                              fullWidth
+                              onClick={() => addComponent(component.type)}
+                              sx={{
+                                height: '70px',
+                                flexDirection: 'column',
+                                gap: 0.5,
+                                fontSize: '10px',
+                                border: '1px solid #E2E8F0',
+                                color: '#4A5568',
+                                backgroundColor: 'white',
+                                '&:hover': {
+                                  backgroundColor: 'rgba(107, 115, 255, 0.04)',
+                                  borderColor: '#2B9CAE',
+                                  color: '#2B9CAE',
+                                  '& .MuiSvgIcon-root': {
+                                    color: '#2B9CAE',
+                                  },
+                                },
+                                '& .MuiSvgIcon-root': {
+                                  color: '#718096',
+                                  fontSize: '1.1rem',
+                                },
+                              }}
+                            >
+                              {component.icon}
+                              <Box sx={{ textAlign: 'center', lineHeight: 1.2 }}>
+                                {component.label}
+                              </Box>
+                            </Button>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </Box>
+                  );
+                } else if (componentSearch && filteredComponents.length === 0) {
+                  // No search results
+                  return (
+                    <Box sx={{ textAlign: 'center', py: 3 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No components found for "{componentSearch}"
+                      </Typography>
+                    </Box>
+                  );
+                } else {
+                  // Group components by category with three-column layout
+                  const categories = [
+                    'Buttons & Actions', 
+                    'Form Controls', 
+                    'Modals & Dialogs', 
+                    'Cards & Display', 
+                    'Navigation', 
+                    'Feedback', 
+                    'Loading', 
+                    'Layout', 
+                    'Utilities', 
+                    'Data Management',
+                    'Legacy'
+                  ];
+                  
+                  return categories.map((category) => {
+                    const categoryComponents = componentLibrary.filter(comp => comp.category === category);
+                    if (categoryComponents.length === 0) return null;
+                    
+                    return (
+                      <Box key={category} sx={{ mb: 2 }}>
+                        <Typography 
+                          variant="subtitle2" 
+                          sx={{ 
+                            color: '#4A5568', 
+                            fontWeight: 600,
+                            textTransform: 'uppercase',
+                            letterSpacing: 1,
+                            mb: 1,
+                            fontSize: '0.75rem',
+                          }}
+                        >
+                          {category}
+                        </Typography>
+                        <Grid container spacing={1}>
+                          {categoryComponents.map((component) => (
+                            <Grid item xs={4} key={component.type}>
+                              <Button
+                                variant="outlined"
+                                fullWidth
+                                onClick={() => addComponent(component.type)}
+                                sx={{
+                                  height: '70px',
+                                  flexDirection: 'column',
+                                  gap: 0.5,
+                                  fontSize: '10px',
+                                  border: '1px solid #E2E8F0',
+                                  color: '#4A5568',
+                                  backgroundColor: 'white',
+                                  '&:hover': {
+                                    backgroundColor: 'rgba(107, 115, 255, 0.04)',
+                                    borderColor: '#2B9CAE',
+                                    color: '#2B9CAE',
+                                    '& .MuiSvgIcon-root': {
+                                      color: '#2B9CAE',
+                                    },
+                                  },
+                                  '& .MuiSvgIcon-root': {
+                                    color: '#718096',
+                                    fontSize: '1.1rem',
+                                  },
+                                }}
+                              >
+                                {component.icon}
+                                <Box sx={{ textAlign: 'center', lineHeight: 1.2 }}>
+                                  {component.label}
+                                </Box>
+                              </Button>
+                            </Grid>
+                          ))}
                         </Grid>
-                      ))}
-                    </Grid>
-                  </Box>
-                );
-              })}
+                      </Box>
+                    );
+                  });
+                }
+              })()}
 
               <Divider sx={{ my: 2, borderColor: '#E2E8F0' }} />
 

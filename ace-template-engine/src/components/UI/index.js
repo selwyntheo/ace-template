@@ -1,6 +1,23 @@
 // UI Component Library - Ace Template Engine
 // Based on reference project components with Material-UI implementation
 
+// Import components for local use in UIComponents object
+import Button, { ButtonSolid, ButtonOutline, ButtonText, IconButton } from './Button';
+import Input, { PasswordInput, EmailInput, SearchInput, CopyableInput, TextArea } from './Input';
+import Modal, { ConfirmModal, AlertModal, FormModal } from './Modal';
+import Card, { ActionCard, StatsCard, FeatureCard } from './Card';
+import RadioGroup, { Radio, CheckboxGroup, Checkbox, Switch, Toggle, FormField } from './FormControls';
+import Select, { MultiSelect, Combobox, NativeSelect, GroupedSelect } from './Select';
+import Drawer, { NavigationDrawer, SidebarLayout, MiniDrawer, RightPanel } from './Drawer';
+import Header, { NavigationHeader, PageHeader, AppBar, StatusHeader } from './Header';
+import Accordion, { AccordionGroup, CollapsibleSection, FAQAccordion, SettingsAccordion } from './Accordion';
+import SearchBox, { AdvancedSearchBox, SearchWithSuggestions, GlobalSearch } from './SearchBox';
+import Pagination, { TablePaginationComponent, AdvancedPagination, SimplePageNav, LoadMorePagination } from './Pagination';
+import Alert, { Toast, SuccessAlert, ErrorAlert, WarningAlert, InfoAlert, InlineAlert, BannerAlert } from './Alert';
+import Spinner, { ProgressBar, LoadingOverlay, InlineLoader, PageLoader, ButtonLoader, SkeletonLoader, StepProgress } from './Loading';
+import Tooltip, { FloatingActionButton, ActionSpeedDial, RichTooltip, HelpTooltip } from './Tooltip';
+import { AdvancedComponentLibrary, ComponentShowcase } from './ComponentShowcase';
+
 // Core Components
 export { default as Button, ButtonSolid, ButtonOutline, ButtonText, IconButton } from './Button';
 export { default as Input, PasswordInput, EmailInput, SearchInput, CopyableInput, TextArea } from './Input';
@@ -101,7 +118,7 @@ export {
 } from './Tooltip';
 
 // Badge and Avatar Components
-export { Badge, NotificationBadge, StatusBadge, Avatar, UserAvatar, AvatarGroup, UploadAvatar } from './Badge';
+export { Badge, NotificationBadge, StatusBadge, Avatar, UserAvatar, AvatarGroupComponent as AvatarGroup, UploadAvatar } from './Badge';
 
 // Menu Components
 export { 
@@ -208,7 +225,7 @@ export const UIComponents = {
   SearchWithSuggestions,
   GlobalSearch,
   Pagination,
-  TablePagination,
+  TablePaginationComponent,
   AdvancedPagination,
   SimplePageNav,
   LoadMorePagination,

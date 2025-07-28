@@ -520,11 +520,12 @@ const PropertyInspector = ({ selectedElement, onPropertyUpdate, designId }) => {
               Table Data Management
             </Typography>
             
-            {/* Simplified table configuration to prevent circular dependencies */}
-            <Alert severity="info" sx={{ mb: 2 }}>
-              Table configuration panel temporarily disabled to resolve infinite rendering issue.
-              Basic table functionality is still available.
-            </Alert>
+            {/* Table Configuration Panel - Re-enabled with proper loop prevention */}
+            <TableConfigurationPanel
+              component={selectedElement}
+              designId={designId}
+              onPropertyChange={updateTableConfiguration}
+            />
             
             <Divider sx={{ my: 2 }} />
           </Box>
